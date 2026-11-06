@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polux Retargeting AI · Agente de Conversión LEAD → PAYER</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Notificación Toast Flotante -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Barra Superior de Navegación y Estado de Conexión -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand-logo">
+        <span class="apple-dot">🍎</span>
+        <div>
+          <strong>Polux Retargeting AI</strong>
+          <small>Sistema Autónomo de Conversión <b>LEAD → PAYER</b> · Investigación U2 (Diego &amp; Ronaldo)</small>
+        </div>
+      </div>
+    </div>
+
+    <nav class="topbar-tabs">
+      <button class="nav-tab active" data-tab="workspace" onclick="switchMainTab('workspace')">
+        🛒 1. Tienda &amp; Simulador Omnicanal en Vivo
+      </button>
+      <button class="nav-tab" data-tab="advisor" onclick="switchMainTab('advisor')">
+        📞 2. Central de Asesor &amp; Llamadas (&gt;10 min)
+        <span id="advisor-badge" class="badge-urgent">1</span>
+      </button>
+      <button class="nav-tab" data-tab="bi" onclick="switchMainTab('bi')">
+        📊 3. Auditoría BI &amp; Sincronización SQL Server
+      </button>
+    </nav>
+
+    <div class="topbar-right">
+      <div id="sql-pill" class="status-pill online">
+        <span class="pulse-dot"></span>
+        <span id="sql-pill-text">PoluxImportDB: Conectando...</span>
+      </div>
+      <a href="http://localhost:8080" target="_blank" class="btn-outline-sm" title="Abrir ERP Principal Polux Imports">
+        Ir a Polux ERP ↗
+      </a>
+    </div>
+  </header>
+
+  <!-- Cinta Explicativa de las 3 Reglas del Agente (Propuesta Ronaldo) -->
+  <section class="rules-ribbon">
+    <div class="rule-pill tier-1" onclick="jumpAndTrigger(165)">
+      <span class="rule-time">&lt; 5 min (0–299s)</span>
+      <div>
+        <strong>Interés Exploratorio → Correo HTML</strong>
+        <small>"No abandones tu carrito 👀" enviado por SMTP</small>
+      </div>
+      <span class="try-chip">Probar ahora ▶</span>
+    </div>
+
+    <div class="rule-pill tier-2" onclick="jumpAndTrigger(450)">
+      <span class="rule-time">5 a 10 min (300–600s)</span>
+      <div>
+        <strong>Compra Posible → WhatsApp Business Directo</strong>
+        <small>Tarjeta de producto + "¿Tuviste alguna duda...?" + Comprar ahora!</small>
+      </div>
+      <span class="try-chip">Probar ahora ▶</span>
+    </div>
+
+    <div class="rule-pill tier-3" onclick="jumpAndTrigger(695)">
+      <span class="rule-time">&gt; 10 min (&gt;600s)</span>
+      <div>
+        <strong>Compra Muy Muy Posible → Alerta Asesor + Llamada</strong>
+        <small>Alerta sonora crítica + Guion de llamada IA para cierre inmediato</small>
+      </div>
+      <span class="try-chip">Probar ahora ▶</span>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       VISTA 1: WORKSPACE INTERACTIVO (TIENDA CON SENSOR + CELULAR DEL CLIENTE)
+       ======================================================================== -->
+  <main id="tab-workspace" class="main-view active">
+    <div class="workspace-grid">
+      
+      <!-- COLUMNA IZQUIERDA: TIENDA WEB POLUX STORE + TELEMETRÍA DE PERMANENCIA -->
+      <section class="store-panel">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">PASO 1 · NAVEGACIÓN DEL LEAD EN LA PÁGINA WEB</span>
+            <h2>Tienda Oficial Polux Imports (Sensor de Permanencia Activo)</h2>
+          </div>
+          <button class="btn-secondary-sm" onclick="openNewLeadModal()">+ Nuevo Lead Real</button>
+        </div>
+
+        <!-- Selector de Cliente (Lead) -->
+        <div class="lead-selector-bar">
+          <div class="field-group">
+            <label>👤 Cliente (Lead) navegando en la tienda:</label>
+            <select id="lead-select" onchange="onSelectLead(this.value)"></select>
+          </div>
+          <div class="lead-meta-badges" id="lead-meta-badges">
+            <!-- Rellenado dinámicamente -->
+          </div>
+        </div>
+
+        <!-- TELEMETRÍA EN VIVO: CRONÓMETRO DE PERMANENCIA (DWELL TIME) -->
+        <div class="telemetry-box" id="telemetry-box">
+          <div class="telemetry-top">
+            <div class="timer-display">
+              <span class="timer-label">⏱️ TIEMPO REVISANDO EL PRODUCTO</span>
+              <div class="timer-clock" id="timer-clock">00:00</div>
+              <span class="timer-tier-badge" id="timer-tier-badge">Nivel 1: &lt; 5 min → Se enviará Correo HTML</span>
+            </div>
+
+            <div class="timer-controls">
+              <span class="accel-label">⚡ Acelerador de Tiempo (Para Demo con el Profesor):</span>
+              <div class="accel-buttons">
+                <button class="btn-accel t1" onclick="setSimulatedSeconds(165)">
+                  📧 02:45 min (&lt;5m Correo)
+                </button>
+                <button class="btn-accel t2" onclick="setSimulatedSeconds(450)">
+                  💬 07:30 min (5–10m WhatsApp)
+                </button>
+                <button class="btn-accel t3" onclick="setSimulatedSeconds(695)">
+                  📞 11:35 min (&gt;10m Llamada Asesor)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de Progreso Visual de Intención -->
+          <div class="dwell-progress-wrapper">
+            <div class="dwell-progress-bar">
+              <div id="dwell-progress-fill" class="dwell-progress-fill" style="width: 15%"></div>
+            </div>
+            <div class="dwell-markers">
+              <span>0 min (Inicio)</span>
+              <span>5 min (Umbral WhatsApp 💬)</span>
+              <span>10 min (Umbral Llamada Asesor 📞)</span>
+              <span>15 min+</span>
+            </div>
+          </div>
+
+          <div class="abandon-action-row">
+            <div class="exit-intent-toggle">
+              <input type="checkbox" id="auto-exit-check" />
+              <label for="auto-exit-check">Detectar salida real del mouse fuera de la pestaña (Exit-Intent)</label>
+            </div>
+            <button class="btn-abandon-now" onclick="triggerAbandonment('SALIDA_SIN_COMPLETAR_COMPRA')">
+              🚪 Salir de la página sin comprar (Disparar Agente IA)
+            </button>
+          </div>
+        </div>
+
+        <!-- Ficha del Producto Actualmente Revisado -->
+        <div class="active-product-showcase" id="active-product-showcase">
+          <!-- Renderizado por JS -->
+        </div>
+
+        <!-- Mini Catálogo para cambiar de producto -->
+        <div class="catalog-strip-title">Explorar otros productos Apple en Polux Imports:</div>
+        <div class="catalog-grid" id="catalog-grid">
+          <!-- Renderizado por JS -->
+        </div>
+      </section>
+
+      <!-- COLUMNA DERECHA: SIMULADOR DEL CELULAR DEL CLIENTE (WHATSAPP + CORREO) & DICTAMEN -->
+      <aside class="phone-panel">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">PASO 2 · REACCIÓN AUTOMÁTICA DEL AGENTE IA</span>
+            <h2>Dispositivo del Cliente &amp; Acción Disparada</h2>
+          </div>
+          <div class="phone-app-switcher">
+            <button id="btn-app-wa" class="app-switch-btn active" onclick="switchPhoneApp('whatsapp')">
+              💬 WhatsApp (5–10m)
+            </button>
+            <button id="btn-app-mail" class="app-switch-btn" onclick="switchPhoneApp('email')">
+              ✉️ Correo (&lt;5m)
+            </button>
+            <button id="btn-app-call" class="app-switch-btn" onclick="switchPhoneApp('call')">
+              📞 Llamada (&gt;10m)
+            </button>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Dictamen del Agente -->
+        <div id="agent-verdict-banner" class="agent-verdict-banner">
+          <!-- Renderizado por JS -->
+        </div>
+
+        <!-- MOCKUP DE IPHONE REALISTA (IDÉNTICO A LAS CAPTURAS DE HUSH PUPPIES) -->
+        <div class="iphone-frame">
+          <div class="iphone-notch">
+            <span id="phone-clock">10:20</span>
+            <div class="notch-pill"></div>
+            <span>📶 🔋</span>
+          </div>
+
+          <!-- PANTALLA 1: WHATSAPP BUSINESS (5 A 10 MIN) -->
+          <div id="phone-screen-whatsapp" class="phone-screen wa-screen active">
+            <div class="wa-header">
+              <span class="wa-back">‹ 150</span>
+              <div class="wa-avatar">🍎</div>
+              <div class="wa-contact-info">
+                <strong>Polux Imports <span class="wa-verified">✔</span></strong>
+                <small>tap to add to contacts · Cuenta de empresa</small>
+              </div>
+            </div>
+
+            <div class="wa-chat-body">
+              <div class="wa-system-notice">
+                ⓘ This chat has offers and announcements. <u>Learn more</u>
+              </div>
+
+              <!-- Burbuja de Producto idéntica a la foto 1 de Ronaldo -->
+              <div class="wa-product-card">
+                <div class="wa-product-img-wrap">
+                  <img id="wa-prod-img" src="" alt="Producto Apple" />
+                </div>
+                <div class="wa-product-domain" id="wa-prod-domain">l.polux.pe</div>
+                <div class="wa-product-text" id="wa-prod-text">
+                  Hola RONALDO 🐾🐶 ¿Tuviste alguna duda con la capacidad, el color o los métodos de pago? No te preocupes, estamos aquí para ayudarte.
+                </div>
+                <div class="wa-read-more">
+                  <span>Read more</span>
+                  <small id="wa-msg-time">10:20 AM</small>
+                </div>
+                <button class="wa-cta-buy" onclick="openPoluxPayFromCurrentEvent()">
+                  ↗ Comprar ahora!
+                </button>
+                <button class="wa-cta-reply" onclick="openRealWhatsAppLink()">
+                  📱 Abrir en mi WhatsApp Real (wa.me)
+                </button>
+              </div>
+            </div>
+
+            <div class="wa-footer-bar">
+              <span>＋</span>
+              <div class="wa-input-pill">Mensaje</div>
+              <span>📷 🎤</span>
+            </div>
+          </div>
+
+          <!-- PANTALLA 2: CORREO ELECTRÓNICO (< 5 MIN) -->
+          <div id="phone-screen-email" class="phone-screen email-screen">
+            <div class="mail-top-bar">
+              <span class="mail-back">‹</span>
+              <div class="mail-sender-head">
+                <strong>Polux Imports Perú</strong>
+                <small id="mail-to-line">To: Ronaldo Robles Romero ›</small>
+              </div>
+              <span class="mail-date">Hoy</span>
+            </div>
+
+            <div class="mail-subject-banner">
+              No abandones tu carrito👀
+            </div>
+
+            <div class="mail-card-body">
+              <div class="mail-brand-row">
+                <span class="mail-dog-icon">🍎🐾</span>
+                <span class="mail-brand-title">Polux Imports</span>
+              </div>
+
+              <h3 class="mail-greeting"><strong>Hola,</strong> <span id="mail-client-name">RONALDO</span></h3>
+
+              <p class="mail-p">Vimos que te fuiste sin finalizar tu compra 😔</p>
+              <p class="mail-p">
+                No queremos que te quedes sin tus <strong id="mail-prod-name">iPhone 16 Pro Max</strong> favoritos.
+              </p>
+              <p class="mail-p strong">¡Tu carrito sigue esperando! No lo abandones 🐾</p>
+
+              <div class="mail-product-photo-box">
+                <img id="mail-prod-img" src="" alt="Producto" />
+              </div>
+
+              <button class="mail-recover-btn" onclick="openPoluxPayFromCurrentEvent()">
+                🛒 Recuperar mi carrito y pagar ahora
+              </button>
+
+              <div id="mail-smtp-box" class="mail-smtp-box">
+                <!-- Link de Ethereal o estado SMTP -->
+              </div>
+            </div>
+          </div>
+
+          <!-- PANTALLA 3: LLAMADA ENTRANTE DEL ASESOR (> 10 MIN) -->
+          <div id="phone-screen-call" class="phone-screen call-screen">
+            <div class="incoming-call-ui">
+              <div class="call-pulse-ring">📞</div>
+              <span class="call-sub">LLAMADA PRIORITARIA ENTRANDO...</span>
+              <h3 id="call-advisor-title">Asesor Polux Imports</h3>
+              <p id="call-client-sub">Atendiendo a Ronaldo Robles (&gt;10 min en tienda)</p>
+
+              <div class="call-script-mini">
+                <strong>🗣️ Guion IA en ejecución:</strong>
+                <p id="call-script-preview">
+                  "¡Hola Ronaldo! Vimos que estuviste más de 10 minutos revisando el iPhone 16 Pro Max. Te llamo para ayudarte a reservarlo en 3 cuotas sin intereses o vía Yape..."
+                </p>
+              </div>
+
+              <button class="btn-accept-call-pay" onclick="openPoluxPayFromCurrentEvent()">
+                ✅ Cliente acepta en llamada → Procesar Pago PoluxPay
+              </button>
+              <button class="btn-go-advisor-console" onclick="switchMainTab('advisor')">
+                🎧 Ver Consola Completa del Asesor
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       VISTA 2: CENTRAL DE ASESOR COMERCIAL Y LLAMADAS TELEFÓNICAS (> 10 MIN)
+       ======================================================================== -->
+  <main id="tab-advisor" class="main-view">
+    <div class="advisor-layout">
+      <div class="advisor-left">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">REGLA 3 · CLIENTES CON MÁS DE 10 MINUTOS EN PÁGINA</span>
+            <h2>🚨 Cola de Alertas Críticas para Llamada de Asesor ("Compra Muy Muy Posible")</h2>
+          </div>
+          <button class="btn-accel t3" onclick="jumpAndTrigger(720)">
+            + Simular Nuevo Abandono &gt; 10 min
+          </button>
+        </div>
+
+        <div id="advisor-alerts-list" class="advisor-alerts-list">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+      <div class="advisor-right">
+        <div class="telemarketing-console" id="telemarketing-console">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       VISTA 3: DASHBOARD BI & SINCRONIZACIÓN CON POLUXIMPORTDB (SQL SERVER)
+       ======================================================================== -->
+  <main id="tab-bi" class="main-view">
+    <section class="kpi-cards-row">
+      <div class="kpi-card">
+        <span>Abandonos Detectados</span>
+        <strong id="kpi-total">0</strong>
+        <small>Sesiones capturadas por el sensor</small>
+      </div>
+      <div class="kpi-card">
+        <span>Correos (&lt;5m) / WhatsApp (5–10m)</span>
+        <strong id="kpi-channels">0 / 0</strong>
+        <small>Disparos automáticos omnicanal</small>
+      </div>
+      <div class="kpi-card">
+        <span>Alertas a Asesor (&gt;10m)</span>
+        <strong id="kpi-advisor">0</strong>
+        <small>Compras muy posibles derivadas a llamada</small>
+      </div>
+      <div class="kpi-card highlight">
+        <span>Leads Convertidos a PAYER</span>
+        <strong id="kpi-converted">0</strong>
+        <small id="kpi-revenue">S/ 0 recaudados con Boleta SUNAT</small>
+      </div>
+    </section>
+
+    <section class="bi-table-panel">
+      <div class="panel-header">
+        <div>
+          <span class="eyebrow">TRAZABILIDAD EN TIEMPO REAL · TABLA leads.abandono_carrito_retargeting</span>
+          <h2>Historial Auditable de Sesiones Abandonadas y Conversiones LEAD → PAYER</h2>
+        </div>
+        <button class="btn-secondary-sm" onclick="resetDemoData()">🔄 Reiniciar 3 Casos Base</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="bi-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cliente (Lead)</th>
+              <th>Producto Revisado</th>
+              <th>Tiempo en Página</th>
+              <th>Regla Aplicada</th>
+              <th>Canal Disparado</th>
+              <th>Prob. Compra</th>
+              <th>Estado / Etapa</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="bi-table-body">
+            <!-- Renderizado por JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========================================================================
+       MODAL: PASARELA DE PAGOS POLUXPAY (CONVERSIÓN LEAD -> PAYER)
+       ======================================================================== -->
+  <div id="poluxpay-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">PASARELA OFICIAL POLUXPAY · CONVERSIÓN LEAD → PAYER</span>
+          <h3 id="pay-modal-title">Finalizar Compra Recuperada</h3>
+        </div>
+        <button class="modal-close" onclick="closePoluxPayModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="pay-summary-banner" id="pay-summary-banner"></div>
+
+        <div class="pay-methods-tabs">
+          <button class="pay-method-btn active" data-method="YAPE" onclick="selectPayMethod('YAPE')">📱 Yape QR</button>
+          <button class="pay-method-btn" data-method="PLIN" onclick="selectPayMethod('PLIN')">⚡ Plin QR</button>
+          <button class="pay-method-btn" data-method="TARJETA" onclick="selectPayMethod('TARJETA')">💳 Tarjeta (3 Cuotas 0%)</button>
+        </div>
+
+        <div class="qr-simulation-box" id="qr-simulation-box">
+          <div class="qr-fake-grid">
+            <div class="qr-pattern"></div>
+            <span>POLUXPAY QR</span>
+          </div>
+          <div class="qr-instructions">
+            <strong>Escanea con Yape o Plin · Polux Imports S.A.C.</strong>
+            <p>Titular: Polux Imports Trujillo (RUC 20608912401) · Celular: +51 944 620 118</p>
+            <small>Al confirmar, el cliente pasa automáticamente de <b>LEAD → PAYER</b> en SQL Server y se emite Boleta SUNAT.</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button class="btn-secondary-sm" onclick="closePoluxPayModal()">Cancelar</button>
+        <button id="btn-confirm-pay" class="btn-confirm-pay" onclick="confirmConversionPayment()">
+          ✅ Confirmar Pago y Convertir LEAD → PAYER
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL: REGISTRAR NUEVO LEAD CON TU CORREO O WHATSAPP REAL
+       ======================================================================== -->
+  <div id="new-lead-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">REGISTRO EN VIVO</span>
+          <h3>Agregar Lead Personalizado para Prueba</h3>
+        </div>
+        <button class="modal-close" onclick="closeNewLeadModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div>
+            <label>Nombres *</label>
+            <input type="text" id="nl-first" placeholder="Ej. Ronaldo" />
+          </div>
+          <div>
+            <label>Apellidos *</label>
+            <input type="text" id="nl-last" placeholder="Ej. Robles Romero" />
+          </div>
+          <div>
+            <label>Correo Electrónico (recibirá el email &lt;5m) *</label>
+            <input type="email" id="nl-email" placeholder="tu_correo@unitru.edu.pe" />
+          </div>
+          <div>
+            <label>Celular WhatsApp (recibirá el mensaje 5-10m) *</label>
+            <input type="text" id="nl-phone" placeholder="+51 944 820 915" />
+          </div>
+          <div>
+            <label>DNI (8 dígitos)</label>
+            <input type="text" id="nl-dni" maxlength="8" placeholder="74892103" />
+          </div>
+          <div>
+            <label>Distrito en Trujillo</label>
+            <input type="text" id="nl-district" value="Víctor Larco Herrera" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-secondary-sm" onclick="closeNewLeadModal()">Cancelar</button>
+        <button class="btn-confirm-pay" onclick="createCustomLead()">Guardar y Seleccionar Lead</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

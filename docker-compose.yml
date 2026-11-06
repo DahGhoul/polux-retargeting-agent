@@ -1,0 +1,16 @@
+services:
+  retargeting-agent:
+    build: .
+    container_name: polux-retargeting-agent
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DB_HOST: ${DB_HOST:-host.docker.internal}
+      DB_PORT: ${DB_PORT:-1433}
+      DB_USER: ${DB_USER:-polux_app}
+      DB_PASSWORD: ${DB_PASSWORD:-PoluxDemo_2026!}
+      DB_NAME: ${DB_NAME:-PoluxImportDB}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
