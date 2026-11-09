@@ -1,4 +1,6 @@
 node_modules/
+wa_auth_session/
 .env
 npm-debug.log*
 .DS_Store
+

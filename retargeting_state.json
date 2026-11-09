@@ -1,4 +1,14 @@
 {
+  "config": {
+    "advisorName": "Diego Cuba (Asesor Senior Polux)",
+    "advisorPhone": "+51 944 620 118",
+    "advisorEmail": "diegokids111@gmail.com",
+    "poluxStoreUrl": "http://localhost:8080/landing",
+    "smtpHost": "smtp.gmail.com",
+    "smtpPort": 465,
+    "smtpUser": "",
+    "smtpPass": ""
+  },
   "leads": [
     {
       "id": 80003,
@@ -8,15 +18,8 @@
       "email": "ronaldo.robles@unitru.edu.pe",
       "phone": "+51 944 820 915",
       "district": "Víctor Larco Herrera",
-      "university": "Universidad Nacional de Trujillo (UNT)",
-      "occupation": "Ingeniería de Sistemas · UNT",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 3800,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 82,
-      "preferredProductId": 1,
-      "preferredPayment": "YAPE"
+      "stage": "PAYER",
+      "priority": "ALTA"
     },
     {
       "id": 1,
@@ -26,15 +29,8 @@
       "email": "sofia.salazar@upao.edu.pe",
       "phone": "+51 944812001",
       "district": "Víctor Larco Herrera",
-      "university": "Universidad Privada Antenor Orrego (UPAO)",
-      "occupation": "Profesional Independiente",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 4450,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 83,
-      "preferredProductId": 2,
-      "preferredPayment": "YAPE"
+      "stage": "BUYER",
+      "priority": "ALTA"
     },
     {
       "id": 2,
@@ -44,15 +40,8 @@
       "email": "diego.ramirez@unitru.edu.pe",
       "phone": "+51 944812002",
       "district": "Trujillo Centro",
-      "university": "Universidad Nacional de Trujillo (UNT)",
-      "occupation": "Ingeniero de Sistemas / Ejecutivo",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 5100,
       "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 84,
-      "preferredProductId": 3,
-      "preferredPayment": "YAPE"
+      "priority": "ALTA"
     },
     {
       "id": 3,
@@ -62,15 +51,8 @@
       "email": "carlos.mendoza@agrotrujillo.pe",
       "phone": "+51 944812003",
       "district": "El Golf",
-      "university": "Universidad Privada Antenor Orrego (UPAO)",
-      "occupation": "Profesional Independiente",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 5750,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 85,
-      "preferredProductId": 4,
-      "preferredPayment": "YAPE"
+      "stage": "PAYER",
+      "priority": "ALTA"
     },
     {
       "id": 4,
@@ -80,15 +62,8 @@
       "email": "camila.paredes@estudioarquitec.pe",
       "phone": "+51 944812004",
       "district": "California",
-      "university": "Universidad Nacional de Trujillo (UNT)",
-      "occupation": "Ingeniero de Sistemas / Ejecutivo",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 3800,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 86,
-      "preferredProductId": 5,
-      "preferredPayment": "YAPE"
+      "stage": "CUSTOMER",
+      "priority": "ALTA"
     },
     {
       "id": 5,
@@ -98,15 +73,8 @@
       "email": "sebastian.gutierrez@upn.edu.pe",
       "phone": "+51 944812005",
       "district": "Primavera",
-      "university": "Universidad Privada Antenor Orrego (UPAO)",
-      "occupation": "Profesional Independiente",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 4450,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 87,
-      "preferredProductId": 6,
-      "preferredPayment": "YAPE"
+      "stage": "TURNED",
+      "priority": "ALTA"
     },
     {
       "id": 6,
@@ -116,15 +84,8 @@
       "email": "valeria.cabanillas@gmail.com",
       "phone": "+51 944812006",
       "district": "Huanchaco",
-      "university": "Universidad Nacional de Trujillo (UNT)",
-      "occupation": "Ingeniero de Sistemas / Ejecutivo",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 5100,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 88,
-      "preferredProductId": 1,
-      "preferredPayment": "YAPE"
+      "stage": "BUYER",
+      "priority": "ALTA"
     },
     {
       "id": 7,
@@ -134,15 +95,8 @@
       "email": "rodrigo.villanueva@minera.pe",
       "phone": "+51 944812007",
       "district": "Las Quintanas",
-      "university": "Universidad Privada Antenor Orrego (UPAO)",
-      "occupation": "Profesional Independiente",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 5750,
       "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 89,
-      "preferredProductId": 2,
-      "preferredPayment": "YAPE"
+      "priority": "ALTA"
     },
     {
       "id": 8,
@@ -152,15 +106,8 @@
       "email": "luciana.zavaleta@clinica.pe",
       "phone": "+51 944812008",
       "district": "San Andrés",
-      "university": "Universidad Nacional de Trujillo (UNT)",
-      "occupation": "Ingeniero de Sistemas / Ejecutivo",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 3800,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 90,
-      "preferredProductId": 3,
-      "preferredPayment": "YAPE"
+      "stage": "PAYER",
+      "priority": "ALTA"
     },
     {
       "id": 9,
@@ -170,15 +117,8 @@
       "email": "cliente.100009@poluxtrujillo.pe",
       "phone": "+51 941000009",
       "district": "La Esperanza",
-      "university": "Universidad Privada Antenor Orrego (UPAO)",
-      "occupation": "Profesional Independiente",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 4450,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 91,
-      "preferredProductId": 4,
-      "preferredPayment": "YAPE"
+      "stage": "BUYER",
+      "priority": "ALTA"
     },
     {
       "id": 10,
@@ -188,15 +128,8 @@
       "email": "cliente.100010@poluxtrujillo.pe",
       "phone": "+51 941000010",
       "district": "Víctor Larco Herrera",
-      "university": "Universidad Nacional de Trujillo (UNT)",
-      "occupation": "Ingeniero de Sistemas / Ejecutivo",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 5100,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 92,
-      "preferredProductId": 5,
-      "preferredPayment": "YAPE"
+      "stage": "BUYER",
+      "priority": "ALTA"
     },
     {
       "id": 11,
@@ -206,15 +139,151 @@
       "email": "cliente.100011@poluxtrujillo.pe",
       "phone": "+51 941000011",
       "district": "Trujillo Centro",
-      "university": "Universidad Privada Antenor Orrego (UPAO)",
-      "occupation": "Profesional Independiente",
-      "company": "Polux Imports / Trujillo",
-      "monthlyIncome": 5750,
-      "stage": "LEAD",
-      "priority": "ALTA",
-      "score": 93,
-      "preferredProductId": 6,
-      "preferredPayment": "YAPE"
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 12,
+      "firstName": "Alejandro",
+      "lastName": "Rodríguez Urteaga",
+      "documentNumber": "40000012",
+      "email": "cliente.100012@poluxtrujillo.pe",
+      "phone": "+51 941000012",
+      "district": "El Golf",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 13,
+      "firstName": "Daniela",
+      "lastName": "Sánchez Urteaga",
+      "documentNumber": "40000013",
+      "email": "cliente.100013@poluxtrujillo.pe",
+      "phone": "+51 941000013",
+      "district": "California",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 14,
+      "firstName": "Samuel",
+      "lastName": "Flores Urteaga",
+      "documentNumber": "40000014",
+      "email": "cliente.100014@poluxtrujillo.pe",
+      "phone": "+51 941000014",
+      "district": "San Andrés",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 15,
+      "firstName": "Alessandra",
+      "lastName": "Castillo Urteaga",
+      "documentNumber": "40000015",
+      "email": "cliente.100015@poluxtrujillo.pe",
+      "phone": "+51 941000015",
+      "district": "Primavera",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 16,
+      "firstName": "Mateo",
+      "lastName": "Vásquez Urteaga",
+      "documentNumber": "40000016",
+      "email": "cliente.100016@poluxtrujillo.pe",
+      "phone": "+51 941000016",
+      "district": "Las Quintanas",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 17,
+      "firstName": "Valentina",
+      "lastName": "Díaz Urteaga",
+      "documentNumber": "40000017",
+      "email": "cliente.100017@poluxtrujillo.pe",
+      "phone": "+51 941000017",
+      "district": "La Merced",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 18,
+      "firstName": "Santiago",
+      "lastName": "Chávez Urteaga",
+      "documentNumber": "40000018",
+      "email": "cliente.100018@poluxtrujillo.pe",
+      "phone": "+51 941000018",
+      "district": "Huanchaco",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 19,
+      "firstName": "Mariana",
+      "lastName": "Mendoza Urteaga",
+      "documentNumber": "40000019",
+      "email": "cliente.100019@poluxtrujillo.pe",
+      "phone": "+51 941000019",
+      "district": "La Esperanza",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 20,
+      "firstName": "Leonardo",
+      "lastName": "Salazar Urteaga",
+      "documentNumber": "40000020",
+      "email": "cliente.100020@poluxtrujillo.pe",
+      "phone": "+51 941000020",
+      "district": "Víctor Larco Herrera",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 21,
+      "firstName": "Ximena",
+      "lastName": "Paredes Urteaga",
+      "documentNumber": "40000021",
+      "email": "cliente.100021@poluxtrujillo.pe",
+      "phone": "+51 941000021",
+      "district": "Trujillo Centro",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 22,
+      "firstName": "Joaquín",
+      "lastName": "Villanueva Urteaga",
+      "documentNumber": "40000022",
+      "email": "cliente.100022@poluxtrujillo.pe",
+      "phone": "+51 941000022",
+      "district": "El Golf",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 23,
+      "firstName": "Ariana",
+      "lastName": "Orbegoso Urteaga",
+      "documentNumber": "40000023",
+      "email": "cliente.100023@poluxtrujillo.pe",
+      "phone": "+51 941000023",
+      "district": "California",
+      "stage": "BUYER",
+      "priority": "ALTA"
+    },
+    {
+      "id": 24,
+      "firstName": "Gabriel",
+      "lastName": "Rodríguez Luján",
+      "documentNumber": "40000024",
+      "email": "cliente.100024@poluxtrujillo.pe",
+      "phone": "+51 941000024",
+      "district": "San Andrés",
+      "stage": "BUYER",
+      "priority": "ALTA"
     }
   ],
   "events": [
