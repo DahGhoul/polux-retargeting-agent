@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * PANEL OPERACIONAL REAL DEL AGENTE (SIN SIMULADORES FALSOS)
+ * PANEL OPERACIONAL REAL DEL AGENTE (DISEÑO CLARO Y LIMPIO · LEAD -> PAYER)
  * ============================================================================
  */
 
@@ -17,7 +17,7 @@ function showToast(msg) {
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => el.classList.add('hidden'), 4000);
+  window.__toastTimer = setTimeout(() => el.classList.add('hidden'), 4500);
 }
 
 async function fetchStatus() {
@@ -48,22 +48,24 @@ function renderTopbar() {
   const waText = document.getElementById('wa-pill-text');
   if (waPill && waText) {
     if (state.whatsapp?.state === 'CONNECTED') {
-      waPill.className = 'status-pill online';
-      waText.textContent = `WhatsApp Bot: Conectado (${state.whatsapp.connectedPhone})`;
+      waPill.className = 'pill pill-emerald';
+      waText.textContent = `WhatsApp Bot: Conectado (+${state.whatsapp.connectedPhone})`;
     } else if (state.whatsapp?.state === 'QR_READY') {
-      waPill.className = 'status-pill warn';
-      waText.textContent = 'WhatsApp Bot: Esperando escaneo de QR';
+      waPill.className = 'pill pill-amber';
+      waText.textContent = 'WhatsApp Bot: Escanea el QR para activar';
     } else {
-      waPill.className = 'status-pill warn';
+      waPill.className = 'pill pill-amber';
       waText.textContent = 'WhatsApp Bot: Inicializando...';
     }
   }
 
+  const sqlPill = document.getElementById('sql-pill');
   const sqlText = document.getElementById('sql-pill-text');
-  if (sqlText) {
+  if (sqlPill && sqlText) {
+    sqlPill.className = state.sqlServerConnected ? 'pill pill-emerald' : 'pill pill-amber';
     sqlText.textContent = state.sqlServerConnected
       ? 'PoluxImportDB (SQL Server): Conectado'
-      : 'SQL Server: Desconectado';
+      : 'SQL Server: Modo Respaldo Local';
   }
 
   const smtpBadge = document.getElementById('smtp-badge');
@@ -71,7 +73,7 @@ function renderTopbar() {
     smtpBadge.textContent =
       state.smtp?.mode === 'GMAIL_REAL_SMTP'
         ? `Gmail Real (${state.smtp.user})`
-        : `SMTP Activo (${state.smtp?.user || 'Ethereal'})`;
+        : `SMTP Activo (${state.smtp?.user || 'Ethereal Inbox'})`;
   }
 }
 
@@ -150,7 +152,7 @@ function renderLiveSessions() {
           <div>
             <strong>👤 ${s.leadName}</strong>
             <div class="muted">📱 ${s.phone} · ✉️ ${s.email}</div>
-            <div style="margin-top:4px;color:#60a5fa;font-weight:700;">🍎 Viendo ahora: ${s.productName}</div>
+            <div style="margin-top:4px;color:#1d4ed8;font-weight:700;">🍎 Viendo ahora: ${s.productName}</div>
           </div>
           <div style="text-align:right;">
             <div class="live-clock">${mm}:${ss}</div>
@@ -202,7 +204,7 @@ function renderKpisAndAnalytics() {
                 <td><b>${row.tier}</b></td>
                 <td><span class="pill-channel ${row.channel}">${row.channel}</span></td>
                 <td>${total}</td>
-                <td><b style="color:#34d399;">${conv}</b></td>
+                <td><b style="color:#047857;">${conv}</b></td>
                 <td><b>${rate}%</b></td>
                 <td><b>${fmtMoney(row.totalSoldPen)}</b></td>
               </tr>
@@ -230,11 +232,11 @@ function renderEventsTable() {
       let deliveryBadge = '';
       if (ev.channel === 'CORREO_HTML') {
         deliveryBadge = deliv.sent
-          ? `✅ Correo Enviado ${ev.emailPreviewUrl ? `(<a href="${ev.emailPreviewUrl}" target="_blank" style="color:#60a5fa;">Ver Inbox Real ↗</a>)` : ''}`
+          ? `✅ Correo Enviado ${ev.emailPreviewUrl ? `· <a href="${ev.emailPreviewUrl}" target="_blank" style="color:#1d4ed8;font-weight:700;">Abrir Correo Real ↗</a>` : ''}`
           : `⚠️ Error SMTP: ${deliv.reason || ''}`;
       } else if (ev.channel === 'WHATSAPP_DIRECTO') {
         deliveryBadge = deliv.sent
-          ? `✅ WhatsApp Enviado Directo al Celular`
+          ? `✅ WhatsApp Enviado Directo al Celular (${ev.leadPhone})`
           : `<a href="${ev.waManualFallbackUrl}" target="_blank" class="link-wa">📲 Enviar por WhatsApp Web ↗</a>`;
       } else {
         deliveryBadge = deliv.sent
@@ -251,7 +253,7 @@ function renderEventsTable() {
           </td>
           <td>
             <strong>${ev.productName}</strong>
-            <div style="color:#60a5fa;font-weight:700;">${fmtMoney(ev.productPrice)}</div>
+            <div style="color:#1d4ed8;font-weight:700;">${fmtMoney(ev.productPrice)}</div>
           </td>
           <td><b>${ev.durationLabel}</b></td>
           <td>
@@ -277,6 +279,56 @@ function renderEventsTable() {
       `;
     })
     .join('');
+}
+
+async function triggerDirectTest(secondsViewed, exitReason) {
+  const leadName = document.getElementById('test-name')?.value || 'Ronaldo';
+  const phone = document.getElementById('test-phone')?.value || '+51 944 820 915';
+  const email = document.getElementById('test-email')?.value || 'ronaldo.robles@unitru.edu.pe';
+  const productId = Number(document.getElementById('test-product')?.value || 1);
+
+  showToast(`⏳ Ejecutando Agente Real (${Math.floor(secondsViewed / 60)} min)...`);
+
+  try {
+    const res = await fetch('/api/retargeting/abandon', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leadName,
+        phone,
+        email,
+        productId,
+        secondsViewed,
+        exitReason
+      })
+    });
+    const data = await res.json();
+    if (data.ok && data.event) {
+      const ev = data.event;
+      if (ev.channel === 'CORREO_HTML') {
+        showToast(`✉️ Regla <5m ejecutada: Correo real enviado a ${ev.leadEmail}`);
+        if (ev.emailPreviewUrl) {
+          window.open(ev.emailPreviewUrl, '_blank');
+        }
+      } else if (ev.channel === 'WHATSAPP_DIRECTO') {
+        if (ev.deliveryResult?.sent) {
+          showToast(`💬 Regla 5-10m ejecutada: ¡WhatsApp real con foto enviado al celular ${ev.leadPhone}!`);
+        } else {
+          showToast(`💬 Regla 5-10m ejecutada: Abriendo WhatsApp hacia ${ev.leadPhone} (Escanea el QR para envío 100% silencioso)`);
+          if (ev.waManualFallbackUrl) window.open(ev.waManualFallbackUrl, '_blank');
+        }
+      } else {
+        if (ev.deliveryResult?.sent) {
+          showToast(`🚨 Regla >10m ejecutada: Alerta crítica enviada al WhatsApp del Asesor (${state.config?.advisorPhone})`);
+        } else {
+          showToast(`🚨 Regla >10m ejecutada: Alerta de llamada inmediata registrada para ${ev.leadPhone}`);
+        }
+      }
+      fetchStatus();
+    }
+  } catch (err) {
+    showToast('Error al disparar prueba: ' + err.message);
+  }
 }
 
 async function saveAgentConfig(e) {

@@ -3,108 +3,191 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Polux Retargeting Agent · Panel Operacional Real (LEAD → PAYER)</title>
+  <title>Polux Retargeting Agent · Centro de Control Real (LEAD → PAYER)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
 
+  <!-- BARRA SUPERIOR BLANCA Y LIMPIA (ESTILO APPLE / STRIPE LIGHT) -->
   <header class="topbar">
-    <div class="brand-logo">
-      <span class="apple-dot">🤖</span>
+    <div class="brand">
+      <div class="brand-icon">🍎</div>
       <div>
-        <strong>Polux Retargeting Agent — Motor Real en Segundo Plano</strong>
-        <small>Conectado a la App de Polux Imports (<code>/landing</code>) y SQL Server (<code>PoluxImportDB</code>)</small>
+        <h1>Polux Retargeting Agent <span class="version-pill">Fase LEAD → PAYER</span></h1>
+        <p>Agente Autónomo de Recuperación de Abandono por Tiempo de Permanencia · <b>Diego &amp; Ronaldo</b></p>
       </div>
     </div>
 
-    <div class="topbar-right">
-      <div id="wa-pill" class="status-pill warn">
-        <span class="pulse-dot"></span>
-        <span id="wa-pill-text">WhatsApp Bot: Verificando...</span>
+    <div class="topbar-status">
+      <div id="wa-pill" class="pill pill-amber">
+        <span class="dot"></span>
+        <span id="wa-pill-text">WhatsApp: Verificando...</span>
       </div>
-      <div id="sql-pill" class="status-pill online">
-        <span class="pulse-dot"></span>
+      <div id="sql-pill" class="pill pill-emerald">
+        <span class="dot"></span>
         <span id="sql-pill-text">SQL Server: Conectando...</span>
       </div>
-      <a href="http://localhost:8080/landing" target="_blank" class="btn-primary-sm">
+      <a href="http://localhost:8080/landing" target="_blank" class="btn btn-primary">
         🛒 Abrir Tienda Polux (/landing) ↗
       </a>
-      <a href="http://localhost:8080/analytics" target="_blank" class="btn-outline-sm">
-        📊 Abrir ERP Polux ↗
+      <a href="http://localhost:8080/analytics" target="_blank" class="btn btn-secondary">
+        📊 ERP Polux ↗
       </a>
     </div>
   </header>
 
   <main class="container">
-    <!-- FILA 1: CONEXIÓN DE CANALES REALES (QR WHATSAPP BAILEYS + CONFIGURACIÓN SMTP/ASESOR) -->
-    <section class="grid-2">
-      <!-- Tarjeta 1: Vinculación Real de WhatsApp (Baileys) -->
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <span class="eyebrow">CANAL 1 · WHATSAPP REAL AUTOMÁTICO (5 A 10 MIN &amp; ALERTAS &gt;10 MIN)</span>
-            <h2>📱 Conexión Directa de WhatsApp (Baileys Engine)</h2>
-          </div>
-          <button class="btn-outline-sm" onclick="resetWhatsAppSession()">🔄 Generar Nuevo QR</button>
+    <!-- BANDA EXPLICATIVA DE LAS 3 REGLAS DEL AGENTE + BOTONES DE PRUEBA REAL AL CELULAR -->
+    <section class="rules-section">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">MOTOR DE REGLAS DE DECISIÓN AUTOMÁTICA · TIEMPO DE PERMANENCIA (DWELL TIME)</span>
+          <h2>Reglas Activas del Agente y Disparo de Prueba Real al Celular / Correo</h2>
         </div>
-
-        <div id="wa-connection-box" class="wa-connection-box">
-          <!-- Renderizado dinámicamente -->
+        <div class="quick-target-bar">
+          <div class="input-inline">
+            <label>👤 Cliente:</label>
+            <input type="text" id="test-name" value="Ronaldo" placeholder="Nombre" style="width:110px;" />
+          </div>
+          <div class="input-inline">
+            <label>📱 WhatsApp destino:</label>
+            <input type="text" id="test-phone" value="+51 944 820 915" placeholder="+51 999 999 999" style="width:145px;" />
+          </div>
+          <div class="input-inline">
+            <label>✉️ Correo destino:</label>
+            <input type="email" id="test-email" value="ronaldo.robles@unitru.edu.pe" placeholder="correo@ejemplo.com" style="width:210px;" />
+          </div>
+          <div class="input-inline">
+            <label>🍎 Producto:</label>
+            <select id="test-product" style="width:190px;">
+              <option value="1">iPhone 16 Pro Max 256 GB (S/ 6,599)</option>
+              <option value="2">iPhone 16 128 GB (S/ 4,299)</option>
+              <option value="3">MacBook Air 13" Chip M4 (S/ 5,499)</option>
+              <option value="4">iPad Air 11" Chip M3 (S/ 3,199)</option>
+              <option value="5">Apple Watch Series 10 (S/ 2,199)</option>
+              <option value="6">AirPods Pro 2 USB-C (S/ 1,099)</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <!-- Tarjeta 2: Configuración de Correo Real SMTP y Número del Asesor -->
+      <div class="rules-grid">
+        <!-- REGLA 1: < 5 MIN -->
+        <div class="rule-card rule-blue">
+          <div class="rule-top">
+            <span class="rule-badge blue">REGLA 1 · MENOS DE 5 MINUTOS (0–299s)</span>
+            <strong>25% – 48% Prob.</strong>
+          </div>
+          <h3>✉️ Envío Automático de Correo HTML</h3>
+          <p>
+            Cuando el cliente revisa un producto menos de 5 minutos y sale de la página, el agente califica <b>Interés Exploratorio</b> y envía un correo HTML con asunto <i>"No abandones tu carrito 👀"</i> y foto del equipo.
+          </p>
+          <button class="btn btn-blue-full" onclick="triggerDirectTest(180, 'PRUEBA_REGLA_MENOR_5_MIN')">
+            ✉️ Disparar Prueba Real (&lt; 5 min · Enviar Correo)
+          </button>
+        </div>
+
+        <!-- REGLA 2: 5 A 10 MIN -->
+        <div class="rule-card rule-emerald">
+          <div class="rule-top">
+            <span class="rule-badge emerald">REGLA 2 · ENTRE 5 Y 10 MINUTOS (300–600s)</span>
+            <strong>65% – 84% Prob.</strong>
+          </div>
+          <h3>💬 Envío Automático de WhatsApp con Foto</h3>
+          <p>
+            Cuando el cliente permanece entre 5 y 10 minutos, es una <b>Compra Posible</b>. El bot de WhatsApp envía automáticamente la foto del producto: <i>"Hola RONALDO 🐾 ¿Tuviste alguna duda con la capacidad, el color o los métodos de pago?"</i>
+          </p>
+          <button class="btn btn-emerald-full" onclick="triggerDirectTest(450, 'PRUEBA_REGLA_5_A_10_MIN')">
+            💬 Disparar Prueba Real (5–10 min · Enviar WhatsApp)
+          </button>
+        </div>
+
+        <!-- REGLA 3: > 10 MIN -->
+        <div class="rule-card rule-rose">
+          <div class="rule-top">
+            <span class="rule-badge rose">REGLA 3 · MÁS DE 10 MINUTOS (&gt; 600s)</span>
+            <strong>88% – 98% Prob.</strong>
+          </div>
+          <h3>🚨 Alerta Real al Asesor + Llamada Inmediata</h3>
+          <p>
+            Cuando supera los 10 minutos, es una <b>Compra Muy Muy Posible</b>. El agente envía una alerta urgente al WhatsApp del Asesor Comercial y registra la orden de llamada telefónica inmediata para cerrar la venta.
+          </p>
+          <button class="btn btn-rose-full" onclick="triggerDirectTest(720, 'PRUEBA_REGLA_MAYOR_10_MIN')">
+            📞 Disparar Prueba Real (&gt; 10 min · Alerta a Asesor)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILA DE CONEXIÓN DE CANALES REALES (WHATSAPP QR + SMTP GMAIL/ASESOR) -->
+    <section class="grid-2">
+      <!-- Tarjeta Izquierda: Vinculación WhatsApp Real -->
       <div class="card">
         <div class="card-head">
           <div>
-            <span class="eyebrow">CANAL 2 Y 3 · CORREO REAL (&lt;5 MIN) Y TELÉFONO DEL ASESOR (&gt;10 MIN)</span>
-            <h2>⚙️ Configuración de Envío Real (SMTP Gmail &amp; Asesor)</h2>
+            <span class="eyebrow">CONEXIÓN DE WHATSAPP REAL (BAILEYS ENGINE)</span>
+            <h2>📱 Vincular WhatsApp del Agente (Envío 100% Automático)</h2>
           </div>
-          <span id="smtp-badge" class="badge-tag">SMTP Activo</span>
+          <button class="btn btn-secondary btn-sm" onclick="resetWhatsAppSession()">🔄 Generar Nuevo QR</button>
+        </div>
+
+        <div id="wa-connection-box" class="wa-connection-box">
+          <!-- Renderizado por JS -->
+        </div>
+      </div>
+
+      <!-- Tarjeta Derecha: Configuración de Correo Real y Celular del Asesor -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">CONFIGURACIÓN DE CANALES REALES</span>
+            <h2>⚙️ Celular del Asesor (&gt;10m) y Correo SMTP (&lt;5m)</h2>
+          </div>
+          <span id="smtp-badge" class="pill pill-blue">SMTP Activo</span>
         </div>
 
         <form onsubmit="saveAgentConfig(event)" class="config-form">
           <div class="form-row">
             <div>
-              <label>Nombre del Asesor Comercial (&gt;10 min)</label>
-              <input type="text" id="cfg-advisor-name" placeholder="Diego Cuba" required />
+              <label>Nombre del Asesor Comercial (&gt; 10 min)</label>
+              <input type="text" id="cfg-advisor-name" placeholder="Diego Cuba (Asesor Polux)" required />
             </div>
             <div>
-              <label>WhatsApp / Celular Real del Asesor (recibe alerta &gt;10m)</label>
+              <label>WhatsApp / Celular Real del Asesor (recibe la alerta &gt; 10 min)</label>
               <input type="text" id="cfg-advisor-phone" placeholder="+51 944 620 118" required />
             </div>
           </div>
 
           <div class="form-row">
             <div>
-              <label>Correo Gmail Emisor (Opcional para SMTP Gmail real)</label>
+              <label>Correo Gmail Emisor (Opcional para enviar desde tu Gmail)</label>
               <input type="email" id="cfg-smtp-user" placeholder="tucorreo@gmail.com" />
             </div>
             <div>
-              <label>Contraseña de Aplicación Gmail (16 letras de Google App Password)</label>
+              <label>Contraseña de Aplicación de Google (16 letras)</label>
               <input type="password" id="cfg-smtp-pass" placeholder="xxxx xxxx xxxx xxxx" />
             </div>
           </div>
 
-          <div class="form-actions">
-            <small id="smtp-status-hint" class="muted">
-              Si dejas Gmail vacío, el agente envía el correo real usando una cuenta SMTP Ethereal con link de bandeja de entrada en vivo.
-            </small>
-            <button type="submit" class="btn-primary-sm">💾 Guardar Configuración</button>
+          <div class="form-footer">
+            <span class="muted">
+              💡 Si dejas Gmail en blanco, el agente envía el correo real mediante una cuenta <b>Ethereal SMTP</b> y te da el botón directo para abrir el correo recibido en pantalla.
+            </span>
+            <button type="submit" class="btn btn-primary">💾 Guardar Cambios</button>
           </div>
         </form>
       </div>
     </section>
 
-    <!-- FILA 2: VISITANTES NAVEGANDO EN VIVO EN LA APP DE POLUX (/landing) -->
-    <section class="card" style="margin-top: 18px;">
+    <!-- MONITOR EN VIVO DE VISITANTES EN LA TIENDA (/landing) -->
+    <section class="card">
       <div class="card-head">
         <div>
-          <span class="eyebrow">TELEMETRÍA EN VIVO DESDE http://localhost:8080/landing</span>
-          <h2>👀 Clientes Navegando Ahora Mismo en la Tienda de Polux Imports</h2>
+          <span class="eyebrow">SENSOR DE TELEMETRÍA EN VIVO DESDE http://localhost:8080/landing</span>
+          <h2>👀 Clientes Revisando Productos Ahora Mismo en la Tienda Polux</h2>
         </div>
-        <span class="badge-tag" id="live-sessions-count">0 sesiones activas</span>
+        <span id="live-sessions-count" class="pill pill-blue">0 clientes activos</span>
       </div>
 
       <div id="live-sessions-box" class="live-sessions-grid">
@@ -112,70 +195,64 @@
       </div>
     </section>
 
-    <!-- FILA 3: INDICADORES DE VENTAS Y CONVERSIÓN EN BASE DE DATOS (PoluxImportDB) -->
-    <section class="kpi-row" style="margin-top: 18px;">
+    <!-- KPIs DE CONVERSIÓN LEAD -> PAYER -->
+    <section class="kpi-row">
       <div class="kpi-card">
-        <span>Total Abandonos Registrados en BD</span>
-        <strong id="kpi-total">0</strong>
-        <small>Tabla <code>leads.abandono_carrito_retargeting</code></small>
+        <span class="kpi-label">Abandonos Capturados en BD</span>
+        <strong id="kpi-total" class="kpi-value">0</strong>
+        <small class="kpi-sub">Tabla <code>leads.abandono_carrito_retargeting</code></small>
       </div>
       <div class="kpi-card">
-        <span>Correos (&lt;5m) / WhatsApp (5–10m)</span>
-        <strong id="kpi-channels">0 / 0</strong>
-        <small>Mensajes reales disparados por el agente</small>
+        <span class="kpi-label">Correos (&lt;5m) / WhatsApp (5–10m)</span>
+        <strong id="kpi-channels" class="kpi-value">0 / 0</strong>
+        <small class="kpi-sub">Mensajes automáticos disparados</small>
       </div>
       <div class="kpi-card">
-        <span>Alertas a Asesor (&gt;10m)</span>
-        <strong id="kpi-advisor">0</strong>
-        <small>Llamadas prioritarias generadas</small>
+        <span class="kpi-label">Alertas a Asesor (&gt;10m)</span>
+        <strong id="kpi-advisor" class="kpi-value">0</strong>
+        <small class="kpi-sub">Derivados a llamada inmediata</small>
       </div>
-      <div class="kpi-card highlight">
-        <span>Leads Convertidos a PAYER (Vendidos)</span>
-        <strong id="kpi-converted">0 (0%)</strong>
-        <small id="kpi-revenue">S/ 0.00 facturados en <code>payers.pago</code></small>
+      <div class="kpi-card kpi-highlight">
+        <span class="kpi-label">Convertidos de LEAD a PAYER (Vendidos)</span>
+        <strong id="kpi-converted" class="kpi-value">0 (0%)</strong>
+        <small id="kpi-revenue" class="kpi-sub">S/ 0.00 facturados con Boleta SUNAT</small>
       </div>
     </section>
 
-    <!-- FILA 4: ANÁLISIS SQL SERVER POR CANAL Y TABLA TRANSACCIONAL DE VENTAS RECUPERADAS -->
-    <section class="grid-analytics" style="margin-top: 18px;">
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <span class="eyebrow">CONSULTA AGREGADA EN SQL SERVER (PoluxImportDB)</span>
-            <h2>📈 Efectividad y Ventas Recuperadas por Regla de Tiempo</h2>
-          </div>
-        </div>
-        <div id="sql-channel-summary">
-          <!-- Renderizado por JS -->
+    <!-- ANÁLISIS EN BASE DE DATOS Y TABLA DE HISTORIAL REAL -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <span class="eyebrow">ANÁLISIS BI EN SQL SERVER (PoluxImportDB)</span>
+          <h2>📊 Resumen de Ventas Recuperadas por Regla de Tiempo</h2>
         </div>
       </div>
+      <div id="sql-channel-summary"></div>
+    </section>
 
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <span class="eyebrow">REGISTROS REALES EN BASE DE DATOS</span>
-            <h2>🗄️ Historial de Abandonos, Envío Real y Conversión a PAYER</h2>
-          </div>
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <span class="eyebrow">AUDITORÍA TRANSACCIONAL EN VIVO</span>
+          <h2>🗄️ Registro de Abandonos, Mensajes Enviados y Conversión a PAYER</h2>
         </div>
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID BD</th>
-                <th>Cliente (Lead) &amp; Contacto Real</th>
-                <th>Producto &amp; Precio</th>
-                <th>Tiempo en Tienda</th>
-                <th>Regla &amp; Canal Disparado</th>
-                <th>Estado de Entrega Real</th>
-                <th>Estado en PoluxImportDB</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="events-tbody">
-              <!-- Renderizado por JS -->
-            </tbody>
-          </table>
-        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cliente (Lead) &amp; Contacto</th>
+              <th>Producto Revisado</th>
+              <th>Permanencia</th>
+              <th>Regla &amp; Canal</th>
+              <th>Entrega Real (Email / WhatsApp / Llamada)</th>
+              <th>Etapa en BD</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="events-tbody"></tbody>
+        </table>
       </div>
     </section>
   </main>

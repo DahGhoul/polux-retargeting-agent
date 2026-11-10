@@ -1,46 +1,59 @@
-# 🍎 Polux Retargeting AI — Agente Autónomo de Conversión LEAD → PAYER
+# 🍎 Polux Retargeting Agent (`AGT_RETARGETING_LP`) — Fase LEAD $\rightarrow$ PAYER
 
-**Proyecto General:** Polux Imports S.A.C. (Metodología IMPULSE · Inteligencia de Negocios UNT)  
-**Subgrupo de Investigación (Pareja):** Diego Cuba & Ronaldo Robles Romero  
-**Fase Específica:** `LEAD` $\rightarrow$ `PAYER` *(Recuperación de Carrito Abandonado y Retargeting por Tiempo de Permanencia)*
+Agente autónomo y **100% funcional** de recuperación de carritos abandonados basado en **Tiempo de Permanencia (*Dwell Time*)**, integrado directamente con la tienda **Polux Imports** (`/landing`) y con **SQL Server (`PoluxImportDB`)**.
 
----
-
-## 🎯 ¿Qué hace este Agente?
-
-Cuando un cliente potencial calificado (**Lead**) navega en la tienda de **Polux Imports**, revisa equipos Apple (como el *iPhone 16 Pro Max* o la *MacBook Air M4*) y **sale de la página sin completar la compra**, el agente evalúa automáticamente el **tiempo de permanencia (Dwell Time)** y ejecuta una acción omnicanal escalonada:
-
-1. **⏱️ Menos de 5 minutos (`< 5 min` — Interés Exploratorio):**
-   - Dispara automáticamente un **Correo Electrónico HTML** vía SMTP con el asunto `"No abandones tu carrito 👀"`, foto del producto revisado y enlace directo para retomar el pago.
-2. **💬 Entre 5 y 10 minutos (`5–10 min` — Compra Posible):**
-   - Dispara un **Mensaje de WhatsApp Business Directo** con tarjeta del producto, texto empático (*"Hola [NOMBRE] 🐾🐶 ¿Tuviste alguna duda con la capacidad, el color o los métodos de pago? No te preocupes, estamos aquí para ayudarte"*), enlace `wa.me` real y botón **`Comprar ahora!`** conectado a la pasarela **PoluxPay (Yape/Plin)**.
-3. **🚨 Más de 10 minutos (`> 10 min` — Compra Muy Muy Posible):**
-   - Activa una **Alerta Sonora y Visual Crítica al Asesor Comercial**, genera el **Guion de Llamada Telefónica con IA** y permite cerrar el pago en vivo durante la llamada.
-
-Al concretarse el pago por cualquiera de las 3 vías, el sistema sincroniza automáticamente con **`PoluxImportDB` (SQL Server 2022)**:
-- Cambia `core.persona.etapa_actual` de `'LEADS'` a `'PAYER'`.
-- Registra la orden en `payers.orden_contratacion`, el abono en `payers.pago` y emite la **Boleta Electrónica SUNAT (`B001-XXXXXX`)** en `payers.comprobante_electronico`.
+**Autores (Subgrupo Fase LEAD $\rightarrow$ PAYER):**
+- **Diego Cuba**
+- **Ronaldo Robles Romero**
 
 ---
 
-## 🚀 Cómo Ejecutar el Sistema (2 Opciones)
+## 🧠 Reglas de Negocio Reales del Agente
 
-### Opción A: Ejecución Directa en Windows (1 Clic)
-1. Haz doble clic en **`INICIAR_AGENTE_RETARGETING.bat`** (o ejecuta `npm install && npm start`).
-2. Abre en tu navegador: **`http://localhost:4000`**
+Cuando un potencial cliente (**LEAD**) entra a la tienda de Polux (`http://localhost:8080/landing`), revisa un producto Apple que podría comprar y **sale de la página por X razones sin completar la compra**, el agente evalúa los segundos exactos de permanencia y actúa automáticamente:
 
-### Opción B: Ejecución con Docker
-```bash
-docker compose up -d --build
-```
-El contenedor se levanta en **`http://localhost:4000`** y se conecta automáticamente al SQL Server del host (`host.docker.internal:1433`) o funciona en modo autónomo si SQL Server no está encendido.
+| Regla de Permanencia | Nivel de Intención | Probabilidad | Acción Real Ejecutada por el Agente |
+| :--- | :--- | :---: | :--- |
+| **Regla 1: `< 5 min`** (`0–299 seg`) | Interés Exploratorio | `25% – 48%` | ✉️ **Envía un Correo HTML Real** (*"No abandones tu carrito 👀"*) vía **Nodemailer** (Gmail SMTP o bandeja Ethereal en vivo) con la foto del equipo y botón de retorno al checkout. |
+| **Regla 2: `5 – 10 min`** (`300–600 seg`) | Compra Posible | `65% – 84%` | 💬 **Envía un WhatsApp Real con Foto directo al celular del cliente** vía `@whiskeysockets/baileys`: *"Hola RONALDO 🐾 ¿Tuviste alguna duda con la capacidad, el color o los métodos de pago?..."* + link de compra. |
+| **Regla 3: `> 10 min`** (`> 600 seg`) | Compra Muy Muy Posible | `88% – 98%` | 🚨 **Envía Alerta Urgente al WhatsApp del Asesor Comercial** y registra una orden de **Llamada Telefónica Inmediata** en `core.alerta_operativa` para cerrar la venta por teléfono. |
+
+Además, cuando el cliente completa el pago, el agente ejecuta la transacción completa **`LEAD` $\rightarrow$ `PAYER`** en SQL Server (`leads.abandono_carrito_retargeting`, `core.persona`, `payers.orden_contratacion`, `payers.pago`, `payers.comprobante_electronico` y `PoluxImportMart.dbo.DimPersona`).
 
 ---
 
-## 📂 Estructura del Repositorio
+## 💻 Cómo correrlo en Windows (PC) o en Mac
 
-- `server.js` — Motor de reglas del Agente IA, servidor SMTP gratuito (Nodemailer/Ethereal) y conector transaccional con `PoluxImportDB`.
-- `public/` — Interfaz interactiva Todo-en-Uno (Tienda con sensor de permanencia + Acelerador de tiempo + Mockup de iPhone con WhatsApp y Correo + Central de Llamadas del Asesor + Dashboard BI).
-- `sql/10_agente_retargeting_lead_payer.sql` — Script DDL para `PoluxImportDB`.
-- `INVESTIGACION_AGENTE_LEAD_A_PAYER_DIEGO_RONALDO.md` — Documento formal de investigación listo para presentar.
-- `Dockerfile` & `docker-compose.yml` — Despliegue en contenedores Docker.
+### Opción A: En Windows (PC)
+1. **Con doble clic:** Ejecuta `iniciar_windows.bat` (dentro de `polux-retargeting-agent`) o `INICIAR_AGENTE_RETARGETING.bat` en la raíz del proyecto.
+2. **O por terminal (PowerShell / CMD):**
+   ```powershell
+   cd polux-retargeting-agent
+   npm install
+   npm start
+   ```
+3. Abre **`http://localhost:4000`** (Centro de Control del Agente) y **`http://localhost:8080/landing`** (Tienda Polux con el sensor embebido).
+
+### Opción B: En Mac (macOS)
+En Mac no se usan archivos `.bat` y SQL Server corre mediante Docker (o el agente usa automáticamente su persistencia híbrida si no hay SQL Server local):
+1. **Ejecución directa con el script para Mac:**
+   ```bash
+   git clone https://github.com/DahGhoul/polux-retargeting-agent.git
+   cd polux-retargeting-agent
+   chmod +x iniciar_mac_linux.sh
+   ./iniciar_mac_linux.sh
+   ```
+2. **O usando Docker Desktop en Mac / Windows:**
+   ```bash
+   docker compose up -d --build
+   ```
+3. Abre **`http://localhost:4000`** en Safari o Chrome.
+
+---
+
+## 📱 Cómo vincular el WhatsApp Real antes de exponer
+
+1. Abre **`http://localhost:4000`**.
+2. En la tarjeta **"Vincular WhatsApp del Agente"**, aparecerá un **Código QR real**.
+3. Abre WhatsApp en tu celular $\rightarrow$ **Dispositivos vinculados** $\rightarrow$ **Vincular un dispositivo** y escanea el QR.
+4. ¡Listo! Cada vez que un usuario esté entre **5 y 10 minutos** en la tienda y salga sin comprar, tu WhatsApp le enviará automáticamente la foto del producto y el mensaje personalizado al número del cliente.
