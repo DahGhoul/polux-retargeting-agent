@@ -3,431 +3,257 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Polux Imports · Retargeting Omnicanal (Fase LEAD → PAYER)</title>
+  <title>Polux Imports · Torre de Control Retargeting (LEAD → PAYER)</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
 
-  <!-- NAVEGACIÓN SUPERIOR EJECUTIVA -->
+  <!-- MODAL PARA VER CONVERSACIÓN REAL DE WHATSAPP BIDIRECCIONAL -->
+  <div id="chat-modal" class="modal-backdrop hidden" onclick="if(event.target===this) closeChatModal()">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span class="eyebrow">HILO REAL DE WHATSAPP BIDIRECCIONAL</span>
+          <h3 id="chat-modal-title">Conversación con Lead</h3>
+        </div>
+        <button type="button" class="btn-icon" onclick="closeChatModal()">✕</button>
+      </div>
+      <div id="chat-modal-body" class="modal-chat-body"></div>
+      <div class="modal-foot">
+        <span id="chat-modal-meta" class="muted-sm"></span>
+        <button type="button" class="btn-secondary-sm" onclick="closeChatModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA SUPERIOR SOBRIA Y OPERATIVA -->
   <header class="topbar">
     <div class="brand">
-      <div class="brand-badge">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
-          <path d="M12 12 2.1 7.1"></path>
-          <path d="M12 12v10"></path>
-        </svg>
-      </div>
+      <div class="brand-mark">P</div>
       <div>
-        <div class="brand-title">
-          <h1>Polux Retargeting Suite</h1>
-          <span class="funnel-badge">Fase LEAD → PAYER</span>
+        <div class="brand-row">
+          <h1>Polux Retargeting</h1>
+          <span class="stage-tag">LEAD → PAYER</span>
         </div>
-        <p class="brand-sub">Recuperación Inteligente de Carritos Abandonados por Tiempo de Navegación · <b>Diego Cuba &amp; Ronaldo Robles</b></p>
+        <p class="brand-sub">Torre de Control de Abandono y Recuperación Omnicanal · Diego Cuba &amp; Ronaldo Robles</p>
       </div>
     </div>
 
-    <div class="topbar-actions">
-      <div id="wa-pill" class="pill pill-amber">
+    <div class="status-group">
+      <div id="wa-pill" class="status-pill amber">
         <span class="dot"></span>
-        <span id="wa-pill-text">WhatsApp: Verificando...</span>
+        <span id="wa-pill-text">WhatsApp: Conectando...</span>
       </div>
-      <div id="sql-pill" class="pill pill-emerald">
+      <div id="smtp-pill" class="status-pill blue">
         <span class="dot"></span>
-        <span id="sql-pill-text">PoluxImportDB: Conectado</span>
+        <span id="smtp-pill-text">SMTP: Verificando...</span>
       </div>
-      <a href="http://localhost:8080/landing" target="_blank" class="nav-link-btn primary">
-        <span>Tienda Polux (/landing)</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-      </a>
-      <a href="http://localhost:8080/analytics" target="_blank" class="nav-link-btn secondary">
-        <span>ERP Analytics</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-      </a>
+      <div id="sql-pill" class="status-pill emerald">
+        <span class="dot"></span>
+        <span id="sql-pill-text">PoluxImportDB: Verificando...</span>
+      </div>
+      <a href="http://localhost:8080/landing" target="_blank" class="btn-nav primary">Tienda Polux ↗</a>
+      <a href="http://localhost:8080/analytics" target="_blank" class="btn-nav secondary">ERP BI ↗</a>
     </div>
   </header>
 
-  <main class="page-container">
-    <!-- PIPELINE DEL EMBUDO LEAD -> PAYER -->
-    <section class="funnel-pipeline-card">
-      <div class="pipeline-header">
-        <span class="section-label">CICLO DE VIDA COMERCIAL DEL CLIENTE</span>
-        <h2>Embudo de Conversión de Carrito Abandonado: de LEAD a PAYER</h2>
+  <main class="container">
+    <!-- KPIs COMERCIALES EN TIEMPO REAL -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Visitantes Activos en Tienda</span>
+        <strong id="kpi-live" class="kpi-val">0</strong>
+        <span class="kpi-foot">Monitoreados por sweeper autónomo</span>
       </div>
-
-      <div class="pipeline-steps">
-        <div class="pipeline-step completed">
-          <div class="step-num">1</div>
-          <div class="step-info">
-            <strong>Lead en Catálogo</strong>
-            <span>Navega en la tienda</span>
-          </div>
-        </div>
-        <div class="pipeline-arrow">➔</div>
-
-        <div class="pipeline-step active">
-          <div class="step-num">2</div>
-          <div class="step-info">
-            <strong>Detección de Abandono</strong>
-            <span>Sale sin pagar (Dwell Time)</span>
-          </div>
-        </div>
-        <div class="pipeline-arrow">➔</div>
-
-        <div class="pipeline-step current">
-          <div class="step-num">3</div>
-          <div class="step-info">
-            <strong>Acción del Agente</strong>
-            <span>Email / WhatsApp / Asesor</span>
-          </div>
-        </div>
-        <div class="pipeline-arrow">➔</div>
-
-        <div class="pipeline-step target">
-          <div class="step-num">4</div>
-          <div class="step-info">
-            <strong>Conversión a PAYER</strong>
-            <span>Pago validado + Boleta SUNAT</span>
-          </div>
-        </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Abandonos Recuperados / Gestionados</span>
+        <strong id="kpi-total" class="kpi-val">0</strong>
+        <span id="kpi-channels-foot" class="kpi-foot">0 Email · 0 WhatsApp · 0 Asesor</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Llamadas Urgentes Asesor (&gt; 10m)</span>
+        <strong id="kpi-pending-adv" class="kpi-val">0</strong>
+        <span class="kpi-foot">Meta SLA respuesta &lt; 2 min</span>
+      </div>
+      <div class="kpi-card highlight">
+        <span class="kpi-label">Convertidos a PAYER (Ventas Reales)</span>
+        <strong id="kpi-converted" class="kpi-val">0 (0%)</strong>
+        <span id="kpi-revenue" class="kpi-foot-emerald">S/ 0.00 facturados con Boleta SUNAT</span>
       </div>
     </section>
 
-    <!-- CONSOLA INTERACTIVA DE RECUPERACIÓN (WORKBENCH OPERATIVO CON SU TOQUE Y GRACIA) -->
-    <section class="workbench-grid">
-      <!-- Columna Izquierda: Controles del Caso de Abandono -->
-      <div class="panel-card">
-        <div class="panel-header">
+    <!-- BLOQUE OPERATIVO PRINCIPAL: SESIONES EN VIVO + CONSOLA DEL ASESOR / QR -->
+    <section class="main-grid">
+      <!-- Izquierda: Visitantes en vivo en /landing -->
+      <div class="card">
+        <div class="card-head">
           <div>
-            <span class="section-label">SIMULADOR &amp; CONTROL OPERATIVO</span>
-            <h2>Intercepción y Recuperación en Vivo</h2>
+            <span class="eyebrow">DETECCIÓN EN VIVO DESDE TIENDA POLUX</span>
+            <h2>Sesiones Activas y Scoring de Intención</h2>
           </div>
-          <span class="mode-tag">Modo Interactivo</span>
+          <span id="live-count-badge" class="badge-soft blue">0 en tienda</span>
         </div>
-
-        <div class="form-group-compact">
-          <label class="input-label">Cliente (Lead Registrado en BD):</label>
-          <div class="input-row-dual">
-            <input type="text" id="test-name" value="Ronaldo Robles Romero" placeholder="Nombre completo" class="field-input" oninput="updateLivePreview()" />
-            <input type="text" id="test-phone" value="+51 944 820 915" placeholder="+51 Celular WhatsApp" class="field-input" oninput="updateLivePreview()" />
-          </div>
-          <input type="email" id="test-email" value="ronaldo.robles@unitru.edu.pe" placeholder="Correo electrónico" class="field-input mt-2" oninput="updateLivePreview()" />
-        </div>
-
-        <div class="form-group-compact mt-4">
-          <label class="input-label">Producto Apple Evaluado en Carrito:</label>
-          <div class="product-selector-box">
-            <select id="test-product" class="field-select" onchange="updateLivePreview()">
-              <option value="1" data-price="6599" data-cuota="2199.67" data-img="https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=900&q=85">iPhone 16 Pro Max 256 GB · Titanio Natural (S/ 6,599)</option>
-              <option value="2" data-price="4299" data-cuota="1433.00" data-img="https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=900&q=85">iPhone 16 128 GB · Ultramarino (S/ 4,299)</option>
-              <option value="3" data-price="5499" data-cuota="1833.00" data-img="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85">MacBook Air 13" Chip M4 · Medianoche (S/ 5,499)</option>
-              <option value="4" data-price="3199" data-cuota="1066.33" data-img="https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=85">iPad Air 11" Chip M3 · Azul Cielo (S/ 3,199)</option>
-              <option value="5" data-price="2199" data-cuota="733.00" data-img="https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=900&q=85">Apple Watch Series 10 · 46mm GPS (S/ 2,199)</option>
-              <option value="6" data-price="1099" data-cuota="366.33" data-img="https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=900&q=85">AirPods Pro 2 · USB-C MagSafe (S/ 1,099)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group-compact mt-4">
-          <div class="label-with-meta">
-            <label class="input-label">Tiempo de Permanencia en Tienda (Dwell Time):</label>
-            <span id="current-time-badge" class="time-readout">07m 30s (450 seg)</span>
-          </div>
-
-          <!-- Selector Rápido de las 3 Reglas de Negocio -->
-          <div class="time-presets-grid">
-            <button type="button" class="preset-btn" id="btn-preset-1" onclick="selectTimePreset(165)">
-              <span class="preset-tag">REGLA 1 (&lt; 5 MIN)</span>
-              <strong>02:45 min</strong>
-              <small>Interés Exploratorio</small>
-            </button>
-            <button type="button" class="preset-btn active" id="btn-preset-2" onclick="selectTimePreset(450)">
-              <span class="preset-tag">REGLA 2 (5–10 MIN)</span>
-              <strong>07:30 min</strong>
-              <small>Compra Posible</small>
-            </button>
-            <button type="button" class="preset-btn" id="btn-preset-3" onclick="selectTimePreset(720)">
-              <span class="preset-tag">REGLA 3 (&gt; 10 MIN)</span>
-              <strong>12:00 min</strong>
-              <small>Alta Prioridad Cierre</small>
-            </button>
-          </div>
-        </div>
-
-        <!-- Tarjeta de Diagnóstico y Estrategia Comercial -->
-        <div class="decision-card" id="decision-card">
-          <div class="decision-header">
-            <span class="decision-eyebrow">ESTRATEGIA ASIGNADA POR EL AGENTE</span>
-            <div class="intent-meter">
-              <span>Intención de Compra:</span>
-              <strong id="diag-intent">74% (Media-Alta)</strong>
-            </div>
-          </div>
-          <div class="decision-action-title" id="diag-action-title">
-            💬 Disparo de WhatsApp Business Oficial con Foto y Cuotas
-          </div>
-          <p class="decision-rationale" id="diag-rationale">
-            El cliente evaluó el equipo durante más de 7 minutos. Superó la etapa de curiosidad inicial y abandonó antes del checkout por dudas en financiamiento o especificaciones. Requiere un canal directo, cálido e inmediato.
-          </p>
-        </div>
-
-        <div class="workbench-actions">
-          <button type="button" class="btn-execute-main" id="btn-execute-main" onclick="executeCurrentRecovery()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            <span id="btn-execute-label">🚀 Ejecutar Recuperación en Vivo (Enviar WhatsApp Real)</span>
-          </button>
+        <div id="live-sessions-box" class="list-stack">
+          <div class="empty-box">Esperando visitantes en /landing...</div>
         </div>
       </div>
 
-      <!-- Columna Derecha: Vista Previa Realista del Mensaje (El "Toque" Visual) -->
-      <div class="panel-card preview-panel">
-        <div class="panel-header">
+      <!-- Derecha: Estado de WhatsApp Oficial + Cola de Atención SLA del Asesor -->
+      <div class="card">
+        <div class="card-head">
           <div>
-            <span class="section-label">VISOR DE EXPERIENCIA DEL CLIENTE</span>
-            <h2>Vista Previa del Mensaje que Recibirá el Lead</h2>
+            <span class="eyebrow">CANAL WHATSAPP &amp; ESCALAMIENTO HUMANO</span>
+            <h2>Línea Oficial y Cola Urgente (&gt; 10 min)</h2>
           </div>
-          <div class="preview-tabs">
-            <button type="button" class="tab-btn" id="tab-email" onclick="switchPreviewTab('EMAIL')">✉️ Correo</button>
-            <button type="button" class="tab-btn active" id="tab-whatsapp" onclick="switchPreviewTab('WHATSAPP')">💬 WhatsApp</button>
-            <button type="button" class="tab-btn" id="tab-advisor" onclick="switchPreviewTab('ADVISOR')">📞 Asesor</button>
-          </div>
+          <button type="button" class="btn-secondary-sm" onclick="resetWhatsAppSession()">🔄 Nuevo QR</button>
         </div>
 
-        <!-- VISTA PREVIA: WHATSAPP -->
-        <div id="preview-whatsapp-view" class="preview-view-container">
-          <div class="chat-frame">
-            <div class="chat-header">
-              <div class="chat-avatar">🍎</div>
-              <div class="chat-user-info">
-                <div class="chat-name">Polux Imports Perú <span class="verified-check">✓</span></div>
-                <div class="chat-status">Cuenta Comercial Oficial · En línea</div>
-              </div>
-            </div>
-            <div class="chat-body">
-              <div class="chat-bubble">
-                <div class="bubble-image-wrapper">
-                  <img id="wa-preview-img" src="" alt="Producto Apple" class="bubble-product-img" />
-                </div>
-                <div class="bubble-text" id="wa-preview-text">
-                  <!-- Inyectado por JS -->
-                </div>
-                <div class="bubble-actions">
-                  <a href="http://localhost:8080/landing" target="_blank" class="bubble-cta-btn">
-                    🛒 Completar mi compra ahora →
-                  </a>
-                </div>
-                <div class="bubble-time" id="wa-preview-time">10:24 a. m.</div>
-              </div>
-            </div>
-          </div>
+        <div id="wa-connection-box" class="wa-box"></div>
+
+        <div class="divider"></div>
+
+        <div class="subhead-row">
+          <span class="eyebrow">ALERTAS PRIORITARIAS DE ASESOR (SLA &lt; 2 MIN)</span>
+          <span id="advisor-queue-count" class="badge-soft rose">0 pendientes</span>
         </div>
-
-        <!-- VISTA PREVIA: CORREO HTML -->
-        <div id="preview-email-view" class="preview-view-container hidden">
-          <div class="email-mockup-card">
-            <div class="email-meta-bar">
-              <div><b>De:</b> Polux Imports Perú &lt;tienda@poluximports.pe&gt;</div>
-              <div><b>Para:</b> <span id="email-preview-to">ronaldo.robles@unitru.edu.pe</span></div>
-              <div><b>Asunto:</b> No abandones tu carrito 👀</div>
-            </div>
-            <div class="email-body-content">
-              <div class="email-brand-logo">🍎 Polux Imports</div>
-              <h3 id="email-preview-greeting">Hola, RONALDO</h3>
-              <p class="email-subtext">Vimos que te fuiste sin finalizar tu compra 😔</p>
-              <p>No queremos que te quedes sin tu equipo favorito.</p>
-              <div class="email-product-card">
-                <img id="email-preview-img" src="" alt="Producto" class="email-prod-thumb" />
-                <div>
-                  <strong id="email-preview-prod-title">iPhone 16 Pro Max 256 GB</strong>
-                  <div class="email-prod-price" id="email-preview-prod-price">S/ 6,599.00</div>
-                  <small id="email-preview-installments">o 3 cuotas sin interés de S/ 2,199.67</small>
-                </div>
-              </div>
-              <div class="email-cta-center">
-                <a href="http://localhost:8080/landing" target="_blank" class="email-btn-cta">
-                  Recuperar mi carrito y comprar →
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- VISTA PREVIA: ASESOR COMERCIAL (GUION DE CIERRE) -->
-        <div id="preview-advisor-view" class="preview-view-container hidden">
-          <div class="advisor-dispatch-card">
-            <div class="advisor-alert-banner">
-              🚨 <b>ALERTA PRIORITARIA:</b> El cliente estuvo más de 10 minutos y salió en la fase final de decisión.
-            </div>
-            <div class="advisor-client-card">
-              <div class="client-meta">
-                <span class="client-name" id="adv-client-name">Ronaldo Robles Romero</span>
-                <span class="client-phone" id="adv-client-phone">+51 944 820 915</span>
-              </div>
-              <div class="client-interest">
-                <span>Producto en Carrito:</span>
-                <strong id="adv-client-product">iPhone 16 Pro Max (S/ 6,599.00)</strong>
-              </div>
-            </div>
-
-            <div class="advisor-script-box">
-              <span class="script-tag">GUION TELEFÓNICO SUGERIDO PARA EL ASESOR:</span>
-              <p id="adv-script-text">
-                "¡Hola Ronaldo! Te saluda Diego Cuba de Polux Imports Trujillo. Vimos que estuviste evaluando el iPhone 16 Pro Max en nuestra tienda y te llamo personalmente para darte 3 cuotas sin intereses o despacho express hoy mismo a tu domicilio."
-              </p>
-            </div>
-
-            <div class="advisor-actions-row">
-              <a href="tel:+51944820915" id="adv-call-link" class="btn-adv-call">
-                📞 Iniciar Llamada Directa al Cliente
-              </a>
-            </div>
-          </div>
-        </div>
+        <div id="advisor-queue-box" class="list-stack mt-2"></div>
       </div>
     </section>
 
-    <!-- CANALES ACTIVOS & MONITOR EN VIVO DE TIENDA (/landing) -->
-    <section class="grid-2 mt-6">
-      <!-- Tarjeta 1: Conexión de WhatsApp Real y Configuración -->
-      <div class="panel-card">
-        <div class="panel-header">
-          <div>
-            <span class="section-label">CANAL WHATSAPP OFICIAL</span>
-            <h2>Estado del Número WhatsApp del Agente</h2>
-          </div>
-          <button type="button" class="btn-outline-sm" onclick="resetWhatsAppSession()">🔄 Generar Nuevo QR</button>
-        </div>
-
-        <div id="wa-connection-box" class="wa-status-wrapper">
-          <!-- Renderizado dinámicamente por JS -->
-        </div>
-
-        <div class="sub-config-box mt-4">
-          <div class="config-toggle-head" onclick="toggleConfigForm()">
-            <span>⚙️ Ajustes de Asesor Comercial &amp; Correo SMTP</span>
-            <small id="cfg-toggle-arrow">▼ Ver ajustes</small>
-          </div>
-          <form id="agent-config-form" onsubmit="saveAgentConfig(event)" class="config-body hidden">
-            <div class="form-row-2 mt-3">
-              <div>
-                <label class="field-label">Nombre del Asesor Comercial (&gt;10 min):</label>
-                <input type="text" id="cfg-advisor-name" class="field-input" placeholder="Diego Cuba (Asesor Senior)" required />
-              </div>
-              <div>
-                <label class="field-label">WhatsApp / Celular del Asesor (recibe alertas):</label>
-                <input type="text" id="cfg-advisor-phone" class="field-input" placeholder="+51 944 620 118" required />
-              </div>
-            </div>
-            <div class="form-row-2 mt-3">
-              <div>
-                <label class="field-label">Correo Gmail Emisor (Opcional):</label>
-                <input type="email" id="cfg-smtp-user" class="field-input" placeholder="tucorreo@gmail.com" />
-              </div>
-              <div>
-                <label class="field-label">Contraseña de Aplicación de Google (16 letras):</label>
-                <input type="password" id="cfg-smtp-pass" class="field-input" placeholder="xxxx xxxx xxxx xxxx" />
-              </div>
-            </div>
-            <div class="form-footer-action mt-3">
-              <small class="muted-note">Si dejas Gmail vacío, se usa el servidor SMTP de prueba integrado (Ethereal).</small>
-              <button type="submit" class="btn-save-sm">💾 Guardar Configuración</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Tarjeta 2: Monitor de Visitantes en Tienda en Vivo -->
-      <div class="panel-card">
-        <div class="panel-header">
-          <div>
-            <span class="section-label">MONITOR EN TIEMPO REAL</span>
-            <h2>Clientes Navegando en Tienda Polux (/landing)</h2>
-          </div>
-          <span id="live-sessions-count" class="pill pill-blue">0 activos</span>
-        </div>
-
-        <div id="live-sessions-box" class="live-visitors-list">
-          <!-- Renderizado dinámicamente por JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- TABLERO COMERCIAL DE RENDIMIENTO (LEAD -> PAYER) -->
-    <section class="mt-6">
-      <div class="section-intro">
-        <span class="section-label">IMPACTO EN VENTAS Y CONVERSIÓN COMERCIAL</span>
-        <h2>Resultados del Agente en Base de Datos (PoluxImportDB)</h2>
-      </div>
-
-      <div class="kpi-metrics-grid">
-        <div class="kpi-box">
-          <span class="kpi-title">Carritos Abandonados Interceptados</span>
-          <strong id="kpi-total" class="kpi-num">0</strong>
-          <span class="kpi-helper">Registrados en <code>leads.abandono_carrito_retargeting</code></span>
-        </div>
-
-        <div class="kpi-box">
-          <span class="kpi-title">Mensajes Automáticos Disparados</span>
-          <strong id="kpi-channels" class="kpi-num">0 / 0</strong>
-          <span class="kpi-helper">Correos (&lt;5m) / WhatsApp (5–10m)</span>
-        </div>
-
-        <div class="kpi-box">
-          <span class="kpi-title">Casos Críticos Derivados a Asesor</span>
-          <strong id="kpi-advisor" class="kpi-num">0</strong>
-          <span class="kpi-helper">Con llamada inmediata (&gt;10m)</span>
-        </div>
-
-        <div class="kpi-box highlight">
-          <span class="kpi-title">Convertidos a PAYER (Ventas Concretadas)</span>
-          <strong id="kpi-converted" class="kpi-num">0 (0%)</strong>
-          <span id="kpi-revenue" class="kpi-helper-money">S/ 0.00 recuperados y facturados con SUNAT</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- TABLA DE RECUPERACIÓN POR CANAL EN SQL SERVER -->
-    <section class="panel-card mt-6">
-      <div class="panel-header">
+    <!-- TABLA PRINCIPAL DE AUDITORÍA TRANSACCIONAL + CONVERSACIONES -->
+    <section class="card mt-5">
+      <div class="card-head">
         <div>
-          <span class="section-label">ANÁLISIS DE EFECTIVIDAD POR REGLA</span>
-          <h2>Efectividad de Conversión por Tiempo de Permanencia</h2>
+          <span class="eyebrow">REGISTRO TRANSACCIONAL EN PoluxImportDB</span>
+          <h2>Historial de Recuperaciones, Chat Bidireccional y Conversión a PAYER</h2>
         </div>
-      </div>
-      <div id="sql-channel-summary"></div>
-    </section>
-
-    <!-- HISTORIAL TRANSACCIONAL CON BOTÓN DE PAGO DIRECTO A PAYER -->
-    <section class="panel-card mt-6">
-      <div class="panel-header">
-        <div>
-          <span class="section-label">REGISTRO DE RECUPERACIONES</span>
-          <h2>Historial de Intervenciones y Conversión a PAYER</h2>
-        </div>
+        <span id="db-funnel-totals" class="badge-soft neutral">Leads / Payers en BD</span>
       </div>
 
-      <div class="table-container">
+      <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
               <th>ID</th>
               <th>Lead &amp; Contacto</th>
               <th>Producto Evaluado</th>
-              <th>Permanencia</th>
-              <th>Canal Disparado</th>
-              <th>Estado de Envío</th>
-              <th>Etapa del Cliente</th>
-              <th>Acción Comercial</th>
+              <th>Permanencia &amp; Score</th>
+              <th>Canal</th>
+              <th>Entrega Real / Chat</th>
+              <th>Etapa BD</th>
+              <th>Acción</th>
             </tr>
           </thead>
-          <tbody id="events-tbody">
-            <tr><td colspan="8" class="text-center muted-row">Cargando eventos...</td></tr>
-          </tbody>
+          <tbody id="events-tbody"></tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- RESUMEN BI POR REGLA DE TIEMPO -->
+    <section class="card mt-5">
+      <div class="card-head">
+        <div>
+          <span class="eyebrow">ATRIBUCIÓN COMERCIAL BI</span>
+          <h2>Efectividad de Conversión por Rango de Permanencia</h2>
+        </div>
+      </div>
+      <div id="sql-channel-summary"></div>
+    </section>
+
+    <!-- SECCIÓN SECUNDARIA COLAPSABLE: CONFIGURACIÓN DE REGLAS + VERIFICACIÓN EN VIVO -->
+    <section class="card mt-5">
+      <div class="collapsible-head" onclick="toggleAdminDrawer()">
+        <div>
+          <span class="eyebrow">ADMINISTRACIÓN DEL AGENTE</span>
+          <h2>Configuración de Reglas, SMTP Real y Pruebas de Auditoría</h2>
+        </div>
+        <span id="drawer-toggle-label" class="btn-secondary-sm">▼ Abrir ajustes</span>
+      </div>
+
+      <div id="admin-drawer-body" class="drawer-body hidden">
+        <div class="admin-grid">
+          <!-- Configuración de reglas y canales -->
+          <form onsubmit="saveAgentConfig(event)" class="admin-panel">
+            <h3>Parámetros Operativos y Correo Real</h3>
+            <div class="form-grid-2 mt-3">
+              <div>
+                <label class="field-lbl">Nombre del Asesor (&gt; 10 min)</label>
+                <input type="text" id="cfg-advisor-name" class="field-ctrl" required />
+              </div>
+              <div>
+                <label class="field-lbl">WhatsApp del Asesor (Alertas)</label>
+                <input type="text" id="cfg-advisor-phone" class="field-ctrl" required />
+              </div>
+              <div>
+                <label class="field-lbl">Gmail Emisor (SMTP Real)</label>
+                <input type="email" id="cfg-smtp-user" class="field-ctrl" placeholder="correo@gmail.com" />
+              </div>
+              <div>
+                <label class="field-lbl">App Password de Google (16 letras)</label>
+                <input type="password" id="cfg-smtp-pass" class="field-ctrl" placeholder="Dejar igual para mantener la actual" />
+              </div>
+              <div>
+                <label class="field-lbl">Umbral Correo (&lt; segundos)</label>
+                <input type="number" id="cfg-email-max" class="field-ctrl" min="30" required />
+              </div>
+              <div>
+                <label class="field-lbl">Umbral WhatsApp (hasta segundos)</label>
+                <input type="number" id="cfg-wa-max" class="field-ctrl" min="60" required />
+              </div>
+              <div>
+                <label class="field-lbl">Timeout Abandono Autónomo (seg)</label>
+                <input type="number" id="cfg-timeout" class="field-ctrl" min="10" required />
+              </div>
+              <div>
+                <label class="field-lbl">Cooldown Anti-Spam (min)</label>
+                <input type="number" id="cfg-cooldown" class="field-ctrl" min="0" required />
+              </div>
+            </div>
+            <div class="mt-3 flex-end">
+              <button type="submit" class="btn-primary-sm">Guardar Parámetros</button>
+            </div>
+          </form>
+
+          <!-- Verificación controlada de los 3 canales (para auditoría / exposición sin esperar 10m) -->
+          <div class="admin-panel">
+            <h3>Verificación Controlada de Entrega Real (Auditoría)</h3>
+            <p class="muted-sm mt-1">Permite validar la entrega real al correo o WhatsApp sin esperar 10 minutos reloj durante la sustentación.</p>
+            <div class="form-grid-2 mt-3">
+              <div>
+                <label class="field-lbl">Nombre Cliente</label>
+                <input type="text" id="audit-name" class="field-ctrl" value="Ronaldo Robles" />
+              </div>
+              <div>
+                <label class="field-lbl">WhatsApp Destino</label>
+                <input type="text" id="audit-phone" class="field-ctrl" value="+51 944 820 915" />
+              </div>
+              <div>
+                <label class="field-lbl">Correo Destino</label>
+                <input type="email" id="audit-email" class="field-ctrl" value="ronaldo.robles@unitru.edu.pe" />
+              </div>
+              <div>
+                <label class="field-lbl">Producto</label>
+                <select id="audit-product" class="field-ctrl">
+                  <option value="1">iPhone 16 Pro Max 256 GB (S/ 6,599)</option>
+                  <option value="2">iPhone 16 128 GB (S/ 4,299)</option>
+                  <option value="3">MacBook Air 13" M4 (S/ 5,499)</option>
+                  <option value="4">iPad Air 11" M3 (S/ 3,199)</option>
+                  <option value="5">Apple Watch Series 10 (S/ 2,199)</option>
+                  <option value="6">AirPods Pro 2 USB-C (S/ 1,099)</option>
+                </select>
+              </div>
+            </div>
+            <div class="audit-btn-row mt-3">
+              <button type="button" class="btn-secondary-sm" onclick="runControlledAudit(165)">✉️ Probar Regla &lt;5m (Correo)</button>
+              <button type="button" class="btn-secondary-sm" onclick="runControlledAudit(450)">💬 Probar Regla 5–10m (WhatsApp)</button>
+              <button type="button" class="btn-secondary-sm" onclick="runControlledAudit(720)">📞 Probar Regla &gt;10m (Asesor)</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>

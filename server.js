@@ -1,11 +1,13 @@
 /**
  * ============================================================================
- * POLUX RETARGETING AI — SERVICIO REAL EN SEGUNDO PLANO (FASE LEAD -> PAYER)
- * - Envío REAL de WhatsApp con Imagen del Producto vía @whiskeysockets/baileys
- * - Envío REAL de Correo Electrónico HTML vía Nodemailer (Gmail SMTP / Ethereal)
- * - Alerta REAL al WhatsApp del Asesor Comercial (> 10 min)
- * - Telemetría REAL embebida en la app de Polux Imports (/landing) + SendBeacon
- * - Registro y Análisis de Ventas en SQL Server (PoluxImportDB y PoluxImportMart)
+ * POLUX RETARGETING AGENT (AGT_RETARGETING_LP) — FASE LEAD -> PAYER
+ * Motor Autónomo de Recuperación de Carrito y Conversión Comercial
+ * - Detección server-side autónoma por inactividad + sendBeacon inmediato
+ * - Correo HTML Real vía Gmail SMTP (App Password) con Ethereal de respaldo
+ * - WhatsApp Real Bidireccional (@whiskeysockets/baileys): envía foto+link y
+ *   responde consultas entrantes de stock, cuotas, Yape y reserva
+ * - Link Mágico de Recuperación (?recover=TOKEN) integrado con PoluxPay
+ * - Persistencia transaccional en SQL Server (PoluxImportDB y PoluxImportMart)
  * ============================================================================
  */
 
@@ -13,6 +15,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const sql = require('mssql');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
@@ -24,11 +27,33 @@ const {
   fetchLatestBaileysVersion
 } = require('@whiskeysockets/baileys');
 
+// ----------------------------------------------------------------------------
+// 0. CARGA DE VARIABLES DE ENTORNO (.env) SIN DEPENDENCIAS EXTERNAS
+// ----------------------------------------------------------------------------
+(function loadDotEnv() {
+  const envPath = path.join(__dirname, '.env');
+  if (!fs.existsSync(envPath)) return;
+  const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eqIdx = line.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = line.slice(0, eqIdx).trim();
+    let val = line.slice(eqIdx + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (process.env[key] === undefined) {
+      process.env[key] = val;
+    }
+  }
+})();
+
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
 
 app.use(cors({ origin: true, credentials: true }));
-// Permitir JSON y también text/plain para navigator.sendBeacon al cerrar la pestaña
 app.use(express.json());
 app.use(express.text({ type: 'text/plain' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -46,9 +71,11 @@ const CATALOG = [
     category: 'iPhone',
     color: 'Titanio Natural',
     capacity: '256 GB',
+    stock: 4,
     price: 6599.00,
     originalPrice: 7299.00,
     installment3: 2199.67,
+    specs: 'Pantalla 6.9" Super Retina XDR, Chip A18 Pro, Cámara 48MP 5x, sellado Apple USA.',
     image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=900&q=85'
   },
   {
@@ -60,9 +87,11 @@ const CATALOG = [
     category: 'iPhone',
     color: 'Azul Ultramarino',
     capacity: '128 GB',
+    stock: 7,
     price: 4299.00,
     originalPrice: 4799.00,
     installment3: 1433.00,
+    specs: 'Pantalla OLED 6.1", Chip A18, Botón de Acción, garantía oficial 1 año.',
     image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=900&q=85'
   },
   {
@@ -73,10 +102,12 @@ const CATALOG = [
     shortName: 'MacBook Air M4',
     category: 'Mac',
     color: 'Medianoche',
-    capacity: '512 GB SSD',
+    capacity: '16 GB / 512 GB SSD',
+    stock: 3,
     price: 5499.00,
     originalPrice: 6199.00,
     installment3: 1833.00,
+    specs: 'Liquid Retina 13.6", 16 GB RAM unificada, 18h batería, MagSafe 3.',
     image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85'
   },
   {
@@ -87,10 +118,12 @@ const CATALOG = [
     shortName: 'iPad Air M3',
     category: 'iPad',
     color: 'Gris Espacial',
-    capacity: '128 GB',
+    capacity: '128 GB Wi-Fi',
+    stock: 5,
     price: 3199.00,
     originalPrice: 3599.00,
     installment3: 1066.33,
+    specs: 'Liquid Retina 11", Chip M3, compatible Apple Pencil Pro.',
     image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=85'
   },
   {
@@ -101,10 +134,12 @@ const CATALOG = [
     shortName: 'Apple Watch Series 10',
     category: 'Watch',
     color: 'Negro Azabache',
-    capacity: '46 mm',
+    capacity: '46 mm GPS',
+    stock: 6,
     price: 2199.00,
     originalPrice: 2499.00,
     installment3: 733.00,
+    specs: 'OLED gran angular, ECG y apnea, carga 80% en 30 min.',
     image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=85'
   },
   {
@@ -116,9 +151,11 @@ const CATALOG = [
     category: 'AirPods',
     color: 'Blanco',
     capacity: 'USB-C MagSafe',
+    stock: 11,
     price: 1099.00,
     originalPrice: 1299.00,
     installment3: 366.33,
+    specs: 'Chip H2, Cancelación activa 2x, estuche MagSafe con altavoz.',
     image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=900&q=85'
   }
 ];
@@ -138,20 +175,26 @@ function findProduct(idOrSlugOrName) {
 }
 
 // ----------------------------------------------------------------------------
-// 2. CONFIGURACIÓN PERSISTENTE (ASESOR, SMTP, LEADS, EVENTOS)
+// 2. CONFIGURACIÓN PERSISTENTE Y ESTADO EN MEMORIA
 // ----------------------------------------------------------------------------
 const DATA_FILE = path.join(__dirname, 'retargeting_state.json');
 
 const DEFAULT_CONFIG = {
-  advisorName: 'Diego Cuba (Asesor Senior Polux)',
-  advisorPhone: '+51 944 620 118',
-  advisorEmail: 'diegokids111@gmail.com',
-  poluxStoreUrl: 'http://localhost:8080/landing',
-  smtpHost: 'smtp.gmail.com',
-  smtpPort: 465,
-  smtpUser: '',
-  smtpPass: ''
+  advisorName: process.env.ADVISOR_NAME || 'Diego Cuba (Asesor Senior Polux)',
+  advisorPhone: process.env.ADVISOR_PHONE || '+51 944 620 118',
+  advisorEmail: process.env.ADVISOR_EMAIL || 'diegokids111@gmail.com',
+  poluxStoreUrl: process.env.POLUX_STORE_URL || 'http://localhost:8080/landing',
+  smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+  smtpPort: Number(process.env.SMTP_PORT || 465),
+  smtpUser: process.env.SMTP_USER || '',
+  emailMaxSeconds: Number(process.env.RULE_EMAIL_MAX_SECONDS || 300),
+  whatsappMaxSeconds: Number(process.env.RULE_WHATSAPP_MAX_SECONDS || 600),
+  abandonTimeoutSeconds: Number(process.env.SESSION_ABANDON_TIMEOUT_SECONDS || 25),
+  cooldownMinutes: Number(process.env.COOLDOWN_MINUTES || 10)
 };
+
+// Contraseña SMTP se mantiene únicamente en memoria/.env (nunca se graba en JSON)
+let runtimeSmtpPass = process.env.SMTP_PASS || '';
 
 const DEFAULT_LEADS = [
   {
@@ -164,17 +207,6 @@ const DEFAULT_LEADS = [
     district: 'Víctor Larco Herrera',
     stage: 'LEAD',
     priority: 'ALTA'
-  },
-  {
-    id: 1,
-    firstName: 'Diego',
-    lastName: 'Ramírez Cuba',
-    documentNumber: '72849102',
-    email: 'diegokids111@gmail.com',
-    phone: '+51 944 620 118',
-    district: 'Trujillo Centro',
-    stage: 'LEAD',
-    priority: 'ALTA'
   }
 ];
 
@@ -182,8 +214,14 @@ function loadState() {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      const loadedConfig = { ...(parsed.config || {}) };
+      delete loadedConfig.smtpPass;
       return {
-        config: { ...DEFAULT_CONFIG, ...(parsed.config || {}) },
+        config: {
+          ...DEFAULT_CONFIG,
+          ...loadedConfig,
+          smtpUser: process.env.SMTP_USER || loadedConfig.smtpUser || ''
+        },
         leads: Array.isArray(parsed.leads) && parsed.leads.length ? parsed.leads : DEFAULT_LEADS,
         events: Array.isArray(parsed.events) ? parsed.events : []
       };
@@ -196,18 +234,35 @@ function loadState() {
 
 function saveState() {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(appState, null, 2), 'utf8');
+    const safeConfig = { ...appState.config };
+    delete safeConfig.smtpPass;
+    fs.writeFileSync(
+      DATA_FILE,
+      JSON.stringify({ config: safeConfig, leads: appState.leads, events: appState.events }, null, 2),
+      'utf8'
+    );
   } catch (e) {
     console.error('Error guardando estado:', e.message);
   }
 }
 
 let appState = loadState();
-// Sesiones activas en vivo desde /landing (en memoria)
 const activeSessions = new Map();
+const processedSessionIds = new Set();
+
+function fmtMoney(n) {
+  return `S/ ${Number(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function normalizePhoneDigits(phone) {
+  let digits = String(phone || '').replace(/[^0-9]/g, '');
+  if (!digits) return '';
+  if (digits.length === 9 && digits.startsWith('9')) digits = '51' + digits;
+  return digits;
+}
 
 // ----------------------------------------------------------------------------
-// 3. MOTOR WHATSAPP REAL (@whiskeysockets/baileys) — ENVÍO AUTOMÁTICO SIN TOCAR NADA
+// 3. MOTOR WHATSAPP REAL (@whiskeysockets/baileys) — BIDIRECCIONAL
 // ----------------------------------------------------------------------------
 const WA_AUTH_DIR = path.join(__dirname, 'wa_auth_session');
 let waSock = null;
@@ -220,12 +275,135 @@ let waStatus = {
 };
 
 function formatPhoneToJid(phone) {
-  let digits = String(phone || '').replace(/[^0-9]/g, '');
+  const digits = normalizePhoneDigits(phone);
   if (!digits) return null;
-  if (digits.length === 9 && digits.startsWith('9')) {
-    digits = '51' + digits;
-  }
   return `${digits}@s.whatsapp.net`;
+}
+
+function findLatestEventByPhone(senderDigits) {
+  if (!senderDigits) return null;
+  const tail9 = senderDigits.slice(-9);
+  return appState.events.find(ev => {
+    const evDigits = normalizePhoneDigits(ev.leadPhone);
+    return evDigits === senderDigits || (tail9.length === 9 && evDigits.endsWith(tail9));
+  }) || null;
+}
+
+function buildConversationalReply(textRaw, ev) {
+  const txt = String(textRaw || '').toLowerCase().trim();
+  const product = ev ? findProduct(ev.productSlug || ev.productName) : CATALOG[0];
+  const priceStr = fmtMoney(product.price);
+  const cuotaStr = fmtMoney(product.installment3);
+  const checkoutLink = ev?.checkoutUrl || appState.config.poluxStoreUrl || 'http://localhost:8080/landing';
+  const greetingName = ev?.leadFirstName ? `*${ev.leadFirstName}*` : '';
+
+  // 1. Opt-out / no desea continuar
+  if (/\b(no gracias|no me interesa|ya no|stop|basta|dejar de)\b/.test(txt)) {
+    if (ev) ev.clientOptOut = true;
+    return {
+      action: 'OPT_OUT',
+      reply:
+        `Entendido${greetingName ? ' ' + greetingName : ''}, gracias por avisarnos 🙏 No volveremos a escribirte por este producto. Si en algún momento deseas retomar tu cotización en Polux Imports Trujillo, aquí estaremos.`
+    };
+  }
+
+  // 2. Consulta sobre pago, Yape, Plin, link o querer comprar ya
+  if (/\b(yape|plin|pagar|pago|link|enlace|cuota|cuotas|tarjeta|comprar|separar|reservar|quiero)\b/.test(txt)) {
+    return {
+      action: 'SEND_CHECKOUT_LINK',
+      reply:
+        `¡Excelente decisión${greetingName ? ', ' + greetingName : ''}! 🎉\n\n` +
+        `Puedes pagar tu *${product.name}* (${product.color}) por *${priceStr}* o en *3 cuotas sin interés de ${cuotaStr}* usando *Yape, Plin, transferencia BCP/BBVA o tarjeta*.\n\n` +
+        `🔒 Tu unidad queda reservada por 15 minutos con emisión inmediata de Boleta/Factura SUNAT en este enlace directo:\n👉 ${checkoutLink}\n\n` +
+        `Avísame apenas completes el pago para confirmar tu número de orden. 😊`
+    };
+  }
+
+  // 3. Consulta de stock, disponibilidad, color, capacidad, garantía o especificaciones
+  if (/\b(stock|disponible|hay|tienen|color|colores|capacidad|gb|garant|original|sellado|tienda|donde|trujillo|envio|envío)\b/.test(txt)) {
+    return {
+      action: 'PRODUCT_INFO',
+      reply:
+        `¡Sí${greetingName ? ', ' + greetingName : ''}! Tenemos *${product.stock} unidades en stock* de *${product.name}* (${product.color}, ${product.capacity}), nuevos sellados de fábrica Apple USA con *garantía oficial de 1 año* y número de serie verificable en Apple.com ✅\n\n` +
+        `📍 Puedes recoger hoy mismo en nuestra tienda de *Av. Larco 840, Víctor Larco - Trujillo* o pedir entrega express.\n` +
+        `💰 Precio: *${priceStr}* (o 3 cuotas de *${cuotaStr}*).\n\n` +
+        `👉 Finaliza tu reserva aquí: ${checkoutLink}`
+    };
+  }
+
+  // 4. Pide hablar con un asesor o que lo llamen
+  if (/\b(asesor|humano|llamar|llamada|persona|ayuda|duda|consulta)\b/.test(txt)) {
+    return {
+      action: 'ESCALATE_ADVISOR',
+      reply:
+        `¡Por supuesto${greetingName ? ', ' + greetingName : ''}! Acabo de notificar con prioridad alta a *${appState.config.advisorName}* (${appState.config.advisorPhone}) para que te atienda personalmente respecto a tu *${product.name}* 📞.\n\n` +
+        `Si deseas ir avanzando tu reserva mientras te contacta, aquí tienes tu acceso directo: ${checkoutLink}`
+    };
+  }
+
+  // 5. Respuesta general contextual
+  return {
+    action: 'GENERAL_ASSIST',
+    reply:
+      `¡Hola${greetingName ? ' ' + greetingName : ''}! Soy el asistente comercial de *Polux Imports Perú* 🍎.\n\n` +
+      `Veo tu interés en el *${product.name}* (*${priceStr}* · stock disponible: ${product.stock} und.).\n` +
+      `Puedes consultarme por *stock, colores, cuotas sin interés, Yape/Plin* o completar tu compra directo aquí:\n👉 ${checkoutLink}`
+  };
+}
+
+async function handleIncomingWhatsAppMessages(upsert) {
+  if (!upsert || upsert.type !== 'notify' || !Array.isArray(upsert.messages)) return;
+
+  for (const msg of upsert.messages) {
+    try {
+      if (!msg.key || msg.key.fromMe) continue;
+      const remoteJid = msg.key.remoteJid || '';
+      if (!remoteJid || remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') continue;
+
+      const textBody =
+        msg.message?.conversation ||
+        msg.message?.extendedTextMessage?.text ||
+        msg.message?.imageMessage?.caption ||
+        '';
+      if (!textBody.trim()) continue;
+
+      const senderDigits = remoteJid.split('@')[0].replace(/[^0-9]/g, '');
+      const ev = findLatestEventByPhone(senderDigits);
+
+      if (ev) {
+        if (!Array.isArray(ev.conversation)) ev.conversation = [];
+        ev.conversation.push({
+          from: 'CLIENT',
+          text: textBody.trim(),
+          at: new Date().toISOString()
+        });
+      }
+
+      const { action, reply } = buildConversationalReply(textBody, ev);
+      await waSock.sendMessage(remoteJid, { text: reply });
+
+      if (ev) {
+        ev.conversation.push({
+          from: 'AGENT',
+          action,
+          text: reply,
+          at: new Date().toISOString()
+        });
+        if (action === 'ESCALATE_ADVISOR' && waStatus.state === 'CONNECTED' && appState.config.advisorPhone) {
+          const advMsg =
+            `📲 *CLIENTE PIDIÓ ATENCIÓN POR WHATSAPP*\n` +
+            `👤 *Lead:* ${ev.leadName} (${ev.leadPhone})\n` +
+            `🍎 *Producto:* ${ev.productName}\n` +
+            `💬 *Mensaje del cliente:* "${textBody.trim()}"`;
+          await sendRealWhatsAppMessage(appState.config.advisorPhone, null, advMsg).catch(() => {});
+        }
+        saveState();
+      }
+      console.log(`💬 Respuesta automática WhatsApp enviada a +${senderDigits} [Acción: ${action}]`);
+    } catch (err) {
+      console.warn('Error procesando mensaje entrante WhatsApp:', err.message);
+    }
+  }
 }
 
 async function initWhatsAppClient() {
@@ -238,10 +416,11 @@ async function initWhatsAppClient() {
       auth: state,
       printQRInTerminal: false,
       logger: pino({ level: 'silent' }),
-      browser: ['Polux Imports AI Agent', 'Chrome', '122.0.0']
+      browser: ['Polux Imports Suite', 'Chrome', '124.0.0']
     });
 
     waSock.ev.on('creds.update', saveCreds);
+    waSock.ev.on('messages.upsert', handleIncomingWhatsAppMessages);
 
     waSock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
@@ -250,7 +429,7 @@ async function initWhatsAppClient() {
         try {
           waStatus.qrDataUrl = await QRCode.toDataURL(qr, { margin: 1, width: 260 });
           waStatus.state = 'QR_READY';
-          console.log('📱 Nuevo código QR de WhatsApp generado. Escanéalo en http://localhost:4000');
+          console.log('📱 Nuevo código QR de WhatsApp generado. Escanéalo en http://localhost:' + PORT);
         } catch (err) {
           console.error('Error generando QR:', err.message);
         }
@@ -260,9 +439,9 @@ async function initWhatsAppClient() {
         waStatus.state = 'CONNECTED';
         waStatus.qrDataUrl = null;
         waStatus.connectedPhone = waSock.user?.id?.split(':')[0] || 'Conectado';
-        waStatus.connectedName = waSock.user?.name || 'Polux Imports Bot';
+        waStatus.connectedName = waSock.user?.name || 'Polux Imports Oficial';
         waStatus.lastError = null;
-        console.log(`✅ WhatsApp Real Conectado como: ${waStatus.connectedPhone} (${waStatus.connectedName})`);
+        console.log(`✅ WhatsApp Real Conectado como: +${waStatus.connectedPhone} (${waStatus.connectedName})`);
       }
 
       if (connection === 'close') {
@@ -274,9 +453,7 @@ async function initWhatsAppClient() {
 
         if (statusCode === DisconnectReason.loggedOut) {
           console.log('⚠️ Sesión de WhatsApp cerrada. Limpiando credenciales para generar nuevo QR...');
-          try {
-            fs.rmSync(WA_AUTH_DIR, { recursive: true, force: true });
-          } catch (_) {}
+          try { fs.rmSync(WA_AUTH_DIR, { recursive: true, force: true }); } catch (_) {}
           setTimeout(() => initWhatsAppClient(), 1500);
         } else if (shouldReconnect) {
           setTimeout(() => initWhatsAppClient(), 3000);
@@ -290,17 +467,26 @@ async function initWhatsAppClient() {
 }
 
 async function sendRealWhatsAppMessage(phone, imageUrl, captionText) {
-  const jid = formatPhoneToJid(phone);
+  let jid = formatPhoneToJid(phone);
   if (!jid) return { sent: false, reason: 'Número de teléfono inválido' };
 
   if (!waSock || waStatus.state !== 'CONNECTED') {
     return {
       sent: false,
-      reason: 'WhatsApp aún no vinculado con QR (Escanea el QR en el Panel del Agente para envío directo)'
+      reason: 'WhatsApp aún no vinculado con QR (Escanea el QR para envío automático)'
     };
   }
 
   try {
+    // Verificar existencia en WhatsApp y resolver JID canónico
+    const check = await waSock.onWhatsApp(jid).catch(() => []);
+    if (Array.isArray(check) && check.length > 0) {
+      if (!check[0].exists) {
+        return { sent: false, reason: `El número ${phone} no tiene cuenta activa en WhatsApp.` };
+      }
+      jid = check[0].jid || jid;
+    }
+
     if (imageUrl) {
       await waSock.sendMessage(jid, {
         image: { url: imageUrl },
@@ -330,7 +516,7 @@ let mailAccountInfo = { mode: 'INITIALIZING', user: '' };
 async function initMailer() {
   const cfg = appState.config || {};
   const smtpUser = process.env.SMTP_USER || cfg.smtpUser;
-  const smtpPass = process.env.SMTP_PASS || cfg.smtpPass;
+  const smtpPass = runtimeSmtpPass || process.env.SMTP_PASS;
 
   try {
     if (smtpUser && smtpPass) {
@@ -342,7 +528,7 @@ async function initMailer() {
       });
       await mailTransporter.verify();
       mailAccountInfo = { mode: 'GMAIL_REAL_SMTP', user: smtpUser };
-      console.log(`📧 SMTP Real verificado y activo con cuenta: ${smtpUser}`);
+      console.log(`📧 SMTP Real verificado y activo con Gmail: ${smtpUser}`);
       return;
     }
 
@@ -354,17 +540,17 @@ async function initMailer() {
       auth: { user: testAccount.user, pass: testAccount.pass }
     });
     mailAccountInfo = { mode: 'ETHEREAL_SMTP_FALLBACK', user: testAccount.user };
-    console.log(`📧 SMTP de respaldo Ethereal activo (${testAccount.user}). Puedes configurar tu Gmail App Password en el panel.`);
+    console.log(`📧 SMTP Ethereal de respaldo activo (${testAccount.user}).`);
   } catch (e) {
     mailAccountInfo = { mode: 'SMTP_ERROR', user: e.message };
     console.warn('Error iniciando SMTP:', e.message);
   }
 }
 
-function buildRealAbandonedEmailHtml(lead, product, secondsViewed, checkoutUrl) {
+function buildRealAbandonedEmailHtml(lead, product, checkoutUrl) {
   const firstNameUpper = (lead.firstName || 'CLIENTE').toUpperCase();
-  const formattedPrice = `S/ ${Number(product.price).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-  const formattedInstallment = `S/ ${Number(product.installment3).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
+  const formattedPrice = fmtMoney(product.price);
+  const formattedInstallment = fmtMoney(product.installment3);
 
   return `
 <!DOCTYPE html>
@@ -377,39 +563,39 @@ function buildRealAbandonedEmailHtml(lead, product, secondsViewed, checkoutUrl) 
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:24px 0;">
     <tr>
       <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.08);">
+        <table width="560" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,0.08);">
           <tr>
             <td style="background-color:#0f172a;padding:18px 28px;color:#ffffff;">
-              <div style="font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Polux Imports Perú · Tienda Oficial Trujillo</div>
+              <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Polux Imports Perú · Tienda Oficial Trujillo</div>
               <div style="font-size:20px;font-weight:800;margin-top:4px;">No abandones tu carrito 👀</div>
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding:36px 32px 28px 32px;text-align:center;">
-              <div style="font-size:26px;font-weight:800;color:#0f172a;margin-bottom:14px;">🍎 Polux Imports</div>
-              <h2 style="font-size:22px;font-weight:500;color:#111827;margin:8px 0 18px 0;">
+            <td align="center" style="padding:32px 28px;text-align:center;">
+              <div style="font-size:24px;font-weight:800;color:#0f172a;margin-bottom:12px;">🍎 Polux Imports</div>
+              <h2 style="font-size:21px;font-weight:500;color:#111827;margin:8px 0 16px 0;">
                 <strong>Hola,</strong> ${firstNameUpper}
               </h2>
-              <p style="font-size:16px;line-height:1.5;color:#374151;margin:0 0 14px 0;">
-                Vimos que te fuiste sin finalizar tu compra 😔
+              <p style="font-size:15px;line-height:1.5;color:#374151;margin:0 0 12px 0;">
+                Vimos que saliste sin finalizar tu reserva 😔
               </p>
-              <p style="font-size:16px;line-height:1.5;color:#374151;margin:0 0 16px 0;">
-                No queremos que te quedes sin tu <strong>${product.name}</strong> (${product.color}) favorito.
+              <p style="font-size:15px;line-height:1.5;color:#374151;margin:0 0 18px 0;">
+                Guardamos tu <strong>${product.name}</strong> (${product.color}) por <strong>15 minutos</strong> con envío express gratis y garantía oficial Apple de 1 año.
               </p>
-              <p style="font-size:16px;font-weight:700;color:#111827;margin:0 0 24px 0;">
-                ¡Tu carrito sigue esperando! No lo abandones 🐾
-              </p>
-              <div style="background:#f8fafc;border-radius:16px;padding:20px;margin-bottom:24px;border:1px solid #e2e8f0;">
-                <img src="${product.image}" alt="${product.name}" style="max-width:340px;width:100%;height:220px;object-fit:cover;border-radius:12px;display:block;margin:0 auto 16px auto;" />
-                <div style="font-size:18px;font-weight:700;color:#0f172a;">${product.name}</div>
-                <div style="font-size:20px;font-weight:800;color:#2563eb;margin-top:8px;">
+              <div style="background:#f8fafc;border-radius:14px;padding:18px;margin-bottom:22px;border:1px solid #e2e8f0;">
+                <img src="${product.image}" alt="${product.name}" style="max-width:320px;width:100%;height:200px;object-fit:cover;border-radius:10px;display:block;margin:0 auto 14px auto;" />
+                <div style="font-size:17px;font-weight:700;color:#0f172a;">${product.name}</div>
+                <div style="font-size:19px;font-weight:800;color:#1d4ed8;margin-top:6px;">
                   ${formattedPrice} <span style="font-size:13px;font-weight:500;color:#475569;">o 3 cuotas sin interés de ${formattedInstallment}</span>
                 </div>
               </div>
               <a href="${checkoutUrl}"
-                 style="display:inline-block;background-color:#10b981;color:#ffffff;font-weight:700;font-size:16px;text-decoration:none;padding:15px 36px;border-radius:999px;">
-                Comprar ahora en Polux Imports →
+                 style="display:inline-block;background-color:#059669;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;padding:14px 34px;border-radius:999px;">
+                Completar mi compra ahora →
               </a>
+              <p style="font-size:11.5px;color:#94a3b8;margin-top:20px;">
+                Av. Larco 840, Víctor Larco Herrera, Trujillo · Comprobante electrónico SUNAT garantizado.
+              </p>
             </td>
           </tr>
         </table>
@@ -447,7 +633,7 @@ async function initSqlConnection() {
       IF NOT EXISTS (SELECT 1 FROM core.agente_ia WHERE codigo_agente = 'AGT_RETARGETING_LP')
       BEGIN
         INSERT INTO core.agente_ia (codigo_agente, nombre_agente, rol_operativo, fase_principal, requiere_aprobacion_humana, es_activo)
-        VALUES ('AGT_RETARGETING_LP', N'Agente de Recuperación de Abandono (Lead -> Payer)', N'Monitorea permanencia real en tienda (/landing) y ejecuta retargeting: <5m Correo, 5-10m WhatsApp Real, >10m Alerta Asesor.', 'LEADS', 0, 1);
+        VALUES ('AGT_RETARGETING_LP', N'Agente Autónomo de Retargeting (Lead -> Payer)', N'Monitorea sesiones reales en tienda (/landing) y ejecuta recuperación omnicanal (<5m Correo, 5-10m WhatsApp Bidireccional, >10m Alerta Asesor SLA).', 'LEADS', 0, 1);
       END;
 
       IF OBJECT_ID('leads.abandono_carrito_retargeting', 'U') IS NULL
@@ -471,134 +657,164 @@ async function initSqlConnection() {
           estado_recuperacion     VARCHAR(30) NOT NULL DEFAULT 'ENVIADO',
           medio_pago_conversion   VARCHAR(30) NULL,
           monto_pagado_pen        DECIMAL(12,2) NULL,
-          comprobante_sunat       VARCHAR(30) NULL,
+          comprobante_sunat       VARCHAR(40) NULL,
           id_orden_generada       BIGINT NULL,
-          fecha_abandono          DATETIME2(7) NOT NULL DEFAULT SYSDATETIME(),
-          fecha_conversion        DATETIME2(7) NULL
+          fecha_abandono          DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+          fecha_conversion        DATETIME2 NULL
         );
       END;
     `);
-
-    await syncLeadsFromSql();
   } catch (err) {
     sqlConnected = false;
-    console.warn('⚠️ SQL Server no disponible en este instante:', err.message);
-  }
-}
-
-async function syncLeadsFromSql() {
-  if (!sqlConnected || !sqlPool) return;
-  try {
-    const res = await sqlPool.request().query(`
-      SELECT TOP 25
-        p.id_persona,
-        p.nombres,
-        p.apellidos,
-        p.numero_documento,
-        p.correo_electronico,
-        p.telefono_movil,
-        p.ciudad,
-        p.etapa_actual,
-        ISNULL(l.prioridad_comercial, 'ALTA') AS prioridad_comercial
-      FROM core.persona p
-      LEFT JOIN leads.lead l ON l.id_persona = p.id_persona
-      WHERE p.estado_registro = 'ACTIVO'
-        AND (p.nombres LIKE N'%Ronaldo%' OR p.id_persona <= 15 OR p.etapa_actual IN ('LEADS', 'BUYER', 'PAYER'))
-      ORDER BY CASE WHEN p.nombres LIKE N'%Ronaldo%' THEN 0 WHEN p.id_persona <= 6 THEN 1 ELSE 2 END, p.id_persona ASC;
-    `);
-
-    if (res.recordset && res.recordset.length > 0) {
-      appState.leads = res.recordset.map(r => ({
-        id: Number(r.id_persona),
-        firstName: r.nombres,
-        lastName: r.apellidos || 'Trujillo',
-        documentNumber: r.numero_documento || '74892103',
-        email: r.correo_electronico || 'ronaldo.robles@unitru.edu.pe',
-        phone: r.telefono_movil || '+51 944 820 915',
-        district: r.ciudad || 'Víctor Larco Herrera',
-        stage: r.etapa_actual === 'LEADS' ? 'LEAD' : r.etapa_actual,
-        priority: r.prioridad_comercial || 'ALTA'
-      }));
-      saveState();
-    }
-  } catch (e) {
-    console.warn('Error sincronizando leads desde SQL:', e.message);
+    console.warn('⚠️ SQL Server no accesible en este entorno (operando con persistencia local JSON):', err.message);
   }
 }
 
 // ----------------------------------------------------------------------------
-// 6. LÓGICA REAL DE RETARGETING AL ABANDONAR LA TIENDA (/landing)
+// 6. MOTOR DE SCORING INTELIGENTE, ANTI-SPAM Y EJECUCIÓN REAL
 // ----------------------------------------------------------------------------
+function calculateIntentAnalysis(secondsViewed, interactions, product) {
+  const emailMax = Number(appState.config.emailMaxSeconds || 300);
+  const waMax = Number(appState.config.whatsappMaxSeconds || 600);
+  const secs = Math.max(5, Number(secondsViewed || 0));
+  const signals = interactions || {};
+
+  let bonus = 0;
+  const reasons = [];
+  if (signals.openedCheckout) {
+    bonus += 16;
+    reasons.push('Abrió pasarela de pago sin completar (+16%)');
+  }
+  if (signals.openedQuote) {
+    bonus += 10;
+    reasons.push('Inició formulario de cotización (+10%)');
+  }
+  if (Number(signals.productsViewed || 1) >= 2) {
+    bonus += 5;
+    reasons.push(`Comparó ${signals.productsViewed} equipos Apple (+5%)`);
+  }
+  if (Number(product?.price || 0) >= 4000) {
+    bonus += 4;
+    reasons.push('Ticket alto Apple Pro/Mac (+4%)');
+  }
+
+  let tier = '';
+  let channel = '';
+  let intentLevel = '';
+  let baseProb = 0;
+
+  if (secs < emailMax) {
+    tier = 'MENOR_5_MIN';
+    channel = 'CORREO_HTML';
+    intentLevel = 'EXPLORATORIA';
+    baseProb = Math.round(24 + (secs / emailMax) * 20);
+    reasons.unshift(`Permanencia exploratoria (< ${Math.round(emailMax / 60)} min)`);
+  } else if (secs <= waMax) {
+    tier = 'ENTRE_5_Y_10_MIN';
+    channel = 'WHATSAPP_DIRECTO';
+    intentLevel = 'COMPRA_POSIBLE';
+    baseProb = Math.round(62 + ((secs - emailMax) / Math.max(1, waMax - emailMax)) * 18);
+    reasons.unshift(`Permanencia intermedia (${Math.round(emailMax / 60)}–${Math.round(waMax / 60)} min)`);
+  } else {
+    tier = 'MAYOR_10_MIN';
+    channel = 'ALERTA_ASESOR_LLAMADA';
+    intentLevel = 'COMPRA_MUY_POSIBLE';
+    baseProb = Math.round(85 + Math.min(10, (secs - waMax) / 60));
+    reasons.unshift(`Permanencia crítica (> ${Math.round(waMax / 60)} min)`);
+  }
+
+  const probability = Math.min(99, Math.max(20, baseProb + bonus));
+  return { tier, channel, intentLevel, probability, reasons };
+}
+
+function isUnderCooldown(phone, email, productSlug) {
+  const cooldownMs = Number(appState.config.cooldownMinutes || 10) * 60 * 1000;
+  if (cooldownMs <= 0) return false;
+  const cleanPhone = normalizePhoneDigits(phone);
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const now = Date.now();
+
+  return appState.events.some(ev => {
+    if (ev.status === 'CONVERTIDO_PAYER' || ev.clientOptOut) return true;
+    const ageMs = now - new Date(ev.createdAt).getTime();
+    if (ageMs > cooldownMs) return false;
+    const sameProduct = ev.productSlug === productSlug;
+    const samePhone = cleanPhone && normalizePhoneDigits(ev.leadPhone) === cleanPhone;
+    const sameEmail = cleanEmail && String(ev.leadEmail || '').trim().toLowerCase() === cleanEmail;
+    return sameProduct && (samePhone || sameEmail);
+  });
+}
+
 async function processRealAbandonment(payload) {
+  const targetPhone = (payload.phone || '').trim();
+  const targetEmail = (payload.email || '').trim();
+  const targetFirstName = (payload.firstName || (payload.leadName || 'Cliente').split(' ')[0] || 'Cliente').trim();
+  const targetLastName = (payload.lastName || (payload.leadName || '').split(' ').slice(1).join(' ') || '').trim();
+  const fullName = `${targetFirstName} ${targetLastName}`.trim();
+
   let lead = null;
   if (payload.leadId) {
     lead = appState.leads.find(l => Number(l.id) === Number(payload.leadId));
   }
-  if (!lead && (payload.phone || payload.email || payload.firstName)) {
+  if (!lead) {
     lead = {
       id: Number(payload.leadId || 101),
-      firstName: payload.firstName || 'Ronaldo',
-      lastName: payload.lastName || 'Robles Romero',
+      firstName: targetFirstName,
+      lastName: targetLastName || 'Trujillo',
       documentNumber: payload.documentNumber || '74892103',
-      email: payload.email || 'ronaldo.robles@unitru.edu.pe',
-      phone: payload.phone || '+51 944 820 915',
+      email: targetEmail || 'ronaldo.robles@unitru.edu.pe',
+      phone: targetPhone || '+51 944 820 915',
       district: payload.district || 'Víctor Larco Herrera',
       stage: 'LEAD'
     };
   }
-  if (!lead) lead = appState.leads[0];
 
-  // Si en el payload mandaron teléfono o correo actualizados desde la tienda, usarlos en tiempo real
-  const targetPhone = (payload.phone || lead.phone || '+51 944 820 915').trim();
-  const targetEmail = (payload.email || lead.email || 'ronaldo.robles@unitru.edu.pe').trim();
-  const targetFirstName = (payload.firstName || lead.firstName || 'Ronaldo').trim();
-  const targetLastName = (payload.lastName || lead.lastName || 'Robles').trim();
-
+  const finalPhone = targetPhone || lead.phone;
+  const finalEmail = targetEmail || lead.email;
   const product = findProduct(payload.productId || payload.productSlug || payload.productName);
   const secs = Math.max(5, Number(payload.secondsViewed || 120));
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
   const durationLabel = `${mm}:${ss} min (${secs} seg)`;
 
-  const firstNameUpper = targetFirstName.toUpperCase();
-  const formattedPrice = `S/ ${Number(product.price).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-  const cuota3 = `S/ ${Number(product.installment3).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-  const storeCheckoutUrl = `${appState.config.poluxStoreUrl || 'http://localhost:8080/landing'}?recover=1&leadId=${lead.id}&product=${product.slug}`;
+  // Anti-spam check solo para disparos orgánicos automáticos (permite forzar en pruebas manuales si bypassCooldown=true)
+  if (!payload.bypassCooldown && isUnderCooldown(finalPhone, finalEmail, product.slug)) {
+    return {
+      skippedCooldown: true,
+      reason: `Cooldown anti-spam activo (${appState.config.cooldownMinutes} min) para ${finalPhone || finalEmail} en ${product.name}`
+    };
+  }
 
-  let tier = '';
-  let channel = '';
-  let intentLevel = '';
-  let probability = 0;
+  const recoverToken = `PLX-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  const reservationExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const baseStoreUrl = (appState.config.poluxStoreUrl || 'http://localhost:8080/landing').split('?')[0];
+  const storeCheckoutUrl = `${baseStoreUrl}?recover=${recoverToken}&product=${product.slug}`;
+
+  const analysis = calculateIntentAnalysis(secs, payload.interactions, product);
+  const { tier, channel, intentLevel, probability, reasons } = analysis;
+
+  const firstNameUpper = targetFirstName.toUpperCase();
+  const formattedPrice = fmtMoney(product.price);
+  const cuota3 = fmtMoney(product.installment3);
+
   let headline = '';
   let messageBody = '';
   let deliveryResult = {};
   let emailPreviewUrl = null;
   let advisorScript = null;
+  const conversation = [];
 
-  // ==========================================================================
-  // REGLA 1: MENOS DE 5 MINUTOS (< 300 seg) -> CORREO ELECTRÓNICO REAL
-  // ==========================================================================
-  if (secs < 300) {
-    tier = 'MENOR_5_MIN';
-    channel = 'CORREO_HTML';
-    intentLevel = 'EXPLORATORIA';
-    probability = Math.min(48, Math.max(25, Math.round(22 + (secs / 300) * 25)));
-    headline = `Correo enviado a ${targetEmail} (< 5 min en página)`;
-    messageBody = `No abandones tu carrito 👀 — Hola, ${firstNameUpper}. Vimos que te fuiste sin finalizar tu compra de ${product.name} (${formattedPrice}). ¡Tu carrito sigue esperando!`;
+  if (channel === 'CORREO_HTML') {
+    headline = `Correo de recuperación enviado a ${finalEmail}`;
+    messageBody = `No abandones tu carrito 👀 — Hola, ${firstNameUpper}. Reservamos tu ${product.name} (${formattedPrice}) por 15 minutos.`;
 
-    const htmlContent = buildRealAbandonedEmailHtml(
-      { ...lead, firstName: targetFirstName },
-      product,
-      secs,
-      storeCheckoutUrl
-    );
-
-    if (mailTransporter) {
+    const htmlContent = buildRealAbandonedEmailHtml({ ...lead, firstName: targetFirstName }, product, storeCheckoutUrl);
+    if (mailTransporter && finalEmail) {
       try {
         const info = await mailTransporter.sendMail({
-          from: `"Polux Imports Perú 🍎" <${appState.config.smtpUser || 'tienda@poluximports.pe'}>`,
-          to: targetEmail,
-          subject: 'No abandones tu carrito👀',
+          from: `"Polux Imports Perú 🍎" <${process.env.SMTP_USER || appState.config.smtpUser || 'tienda@poluximports.pe'}>`,
+          to: finalEmail,
+          subject: 'No abandones tu carrito 👀',
           html: htmlContent
         });
         const preview = nodemailer.getTestMessageUrl(info);
@@ -606,75 +822,55 @@ async function processRealAbandonment(payload) {
         deliveryResult = {
           sent: true,
           mode: mailAccountInfo.mode,
-          recipient: targetEmail,
+          recipient: finalEmail,
           messageId: info.messageId,
           previewUrl: emailPreviewUrl
         };
       } catch (mailErr) {
         deliveryResult = { sent: false, reason: mailErr.message };
       }
+    } else {
+      deliveryResult = { sent: false, reason: 'Sin correo destino o transporte SMTP no inicializado.' };
     }
-  }
-  // ==========================================================================
-  // REGLA 2: ENTRE 5 Y 10 MINUTOS (300 a 600 seg) -> WHATSAPP REAL CON FOTO
-  // ==========================================================================
-  else if (secs >= 300 && secs <= 600) {
-    tier = 'ENTRE_5_Y_10_MIN';
-    channel = 'WHATSAPP_DIRECTO';
-    intentLevel = 'COMPRA_POSIBLE';
-    probability = Math.min(84, Math.max(65, Math.round(62 + ((secs - 300) / 300) * 22)));
-    headline = `WhatsApp Real enviado a ${targetPhone} (5–10 min en página)`;
-
+  } else if (channel === 'WHATSAPP_DIRECTO') {
+    headline = `WhatsApp oficial enviado a ${finalPhone}`;
     const waCaption =
       `*Polux Imports Perú* 🍎✅\n\n` +
       `Hola *${firstNameUpper}* 🐾🐶 ¿Tuviste alguna duda con la capacidad (${product.capacity}), el color (${product.color}) o los métodos de pago? No te preocupes, estamos aquí para ayudarte.\n\n` +
       `📱 *Equipo:* ${product.name}\n` +
-      `💰 *Precio:* ${formattedPrice} (o 3 cuotas sin interés de ${cuota3})\n\n` +
-      `👉 *Comprar ahora!* ${storeCheckoutUrl}`;
+      `💰 *Precio:* ${formattedPrice} (o 3 cuotas sin interés de ${cuota3})\n` +
+      `⏳ *Reserva exclusiva por 15 min:*\n👉 ${storeCheckoutUrl}\n\n` +
+      `_Responde a este mensaje si deseas consultar stock, colores o pagar con Yape/Plin._`;
 
     messageBody = waCaption;
-    deliveryResult = await sendRealWhatsAppMessage(targetPhone, product.image, waCaption);
-  }
-  // ==========================================================================
-  // REGLA 3: MÁS DE 10 MINUTOS (> 600 seg) -> ALERTA REAL AL ASESOR + LLAMADA
-  // ==========================================================================
-  else {
-    tier = 'MAYOR_10_MIN';
-    channel = 'ALERTA_ASESOR_LLAMADA';
-    intentLevel = 'COMPRA_MUY_POSIBLE';
-    probability = Math.min(98, Math.max(88, Math.round(88 + Math.min(10, (secs - 600) / 60))));
-    headline = `🚨 Alerta Crítica enviada al Asesor (${appState.config.advisorPhone}) para llamar a ${targetFirstName}`;
-
+    deliveryResult = await sendRealWhatsAppMessage(finalPhone, product.image, waCaption);
+    conversation.push({ from: 'AGENT', action: 'INITIAL_RECOVERY', text: waCaption, at: new Date().toISOString() });
+  } else {
+    headline = `Alerta urgente enviada al Asesor (${appState.config.advisorPhone}) para llamar a ${fullName}`;
     const advisorAlertText =
       `🚨 *ALERTA POLUX IMPORTS — COMPRA MUY POSIBLE (>10 MIN)* 🚨\n\n` +
-      `👤 *Cliente (Lead):* ${targetFirstName} ${targetLastName}\n` +
+      `👤 *Cliente (Lead):* ${fullName}\n` +
       `⏱️ *Tiempo revisando:* ${durationLabel}\n` +
+      `📈 *Score de Intención:* ${probability}%\n` +
       `🍎 *Producto:* ${product.name} (${formattedPrice})\n` +
-      `📈 *Probabilidad de Cierre:* ${probability}%\n` +
-      `📞 *Llamar ahora mismo al cliente:* ${targetPhone}\n\n` +
-      `💡 *Guion sugerido:* Ofrecer reserva inmediata con 3 cuotas sin interés de ${cuota3} o pago Yape en PoluxPay.`;
+      `📞 *Llamar ahora mismo al cliente:* ${finalPhone}\n` +
+      `🔗 *Link directo de reserva:* ${storeCheckoutUrl}\n\n` +
+      `💡 *Guion:* Ofrecer 3 cuotas sin interés de ${cuota3} o envío express hoy.`;
 
     messageBody = advisorAlertText;
-
     advisorScript = {
       advisorName: appState.config.advisorName,
       advisorPhone: appState.config.advisorPhone,
-      clientPhone: targetPhone,
-      opening: `¡Hola ${targetFirstName}! Te saluda ${appState.config.advisorName} de Polux Imports Trujillo. Vimos que estuviste más de 10 minutos evaluando el ${product.name} y te llamo para ayudarte a concretar tu pedido sin fricciones.`,
-      closingOffer: `Podemos activarte 3 cuotas sin intereses de ${cuota3} o pago directo por Yape/Plin con entrega certificada en Av. Larco 840.`
+      clientPhone: finalPhone,
+      opening: `¡Hola ${targetFirstName}! Te saluda ${appState.config.advisorName} de Polux Imports Trujillo. Vimos que estuviste evaluando el ${product.name} y te llamo personalmente para ayudarte a reservar tu unidad.`,
+      closingOffer: `Podemos activarte 3 cuotas sin intereses de ${cuota3} o pago directo por Yape/Plin con entrega certificada hoy mismo.`
     };
 
-    // Enviar la alerta real al WhatsApp del Asesor Comercial
-    deliveryResult = await sendRealWhatsAppMessage(
-      appState.config.advisorPhone,
-      product.image,
-      advisorAlertText
-    );
+    deliveryResult = await sendRealWhatsAppMessage(appState.config.advisorPhone, product.image, advisorAlertText);
   }
 
   let sqlRetargetingId = null;
 
-  // Guardar en SQL Server (PoluxImportDB)
   if (sqlConnected && sqlPool) {
     try {
       const ins = await sqlPool.request()
@@ -712,6 +908,7 @@ async function processRealAbandonment(payload) {
           segundosPermanencia: secs,
           rango: tier,
           canal: channel,
+          razones: reasons,
           entregaReal: deliveryResult
         }))
         .input('confianza', sql.Decimal(5, 2), probability)
@@ -728,7 +925,7 @@ async function processRealAbandonment(payload) {
       if (tier === 'MAYOR_10_MIN') {
         await sqlPool.request()
           .input('idPersona', sql.BigInt, lead.id)
-          .input('accion', sql.NVarChar(300), `LLAMAR AHORA A ${targetFirstName} ${targetLastName} (${targetPhone}): Estuvo ${durationLabel} viendo ${product.name} (${probability}% prob.).`)
+          .input('accion', sql.NVarChar(300), `LLAMAR AHORA A ${fullName} (${finalPhone}): Estuvo ${durationLabel} viendo ${product.name} (${probability}% prob.).`)
           .query(`
             INSERT INTO core.alerta_operativa
               (fase, codigo_tipo_alerta, id_persona, id_entidad_referencia, tipo_entidad_referencia, accion_recomendada, rol_responsable, estado_alerta)
@@ -741,15 +938,17 @@ async function processRealAbandonment(payload) {
     }
   }
 
-  const cleanClientPhone = targetPhone.replace(/[^0-9]/g, '');
+  const cleanClientPhone = normalizePhoneDigits(finalPhone);
   const eventRecord = {
     id: sqlRetargetingId || Date.now(),
     sqlRetargetingId,
+    recoverToken,
+    reservationExpiresAt,
     leadId: lead.id,
-    leadName: `${targetFirstName} ${targetLastName}`,
+    leadName: fullName,
     leadFirstName: targetFirstName,
-    leadEmail: targetEmail,
-    leadPhone: targetPhone,
+    leadEmail: finalEmail,
+    leadPhone: finalPhone,
     leadDistrict: lead.district || 'Trujillo',
     productId: product.id,
     productSlug: product.slug,
@@ -759,18 +958,22 @@ async function processRealAbandonment(payload) {
     productImage: product.image,
     secondsViewed: secs,
     durationLabel,
-    exitReason: payload.exitReason || 'SALIDA_DE_TIENDA_POLUX',
+    exitReason: payload.exitReason || 'ABANDONO_DETECTADO',
     tier,
     channel,
     intentLevel,
     probability,
+    intentReasons: reasons,
     headline,
     messageBody,
     emailPreviewUrl,
     advisorScript,
+    advisorClaimedAt: null,
+    slaSeconds: null,
+    conversation,
     deliveryResult,
-    waManualFallbackUrl: `https://wa.me/${cleanClientPhone.startsWith('51') ? cleanClientPhone : '51' + cleanClientPhone}?text=${encodeURIComponent(messageBody)}`,
-    telCallUrl: `tel:${targetPhone}`,
+    waManualFallbackUrl: cleanClientPhone ? `https://wa.me/${cleanClientPhone}?text=${encodeURIComponent(messageBody)}` : null,
+    telCallUrl: finalPhone ? `tel:${finalPhone}` : null,
     checkoutUrl: storeCheckoutUrl,
     status: 'ENVIADO',
     paymentInfo: null,
@@ -784,12 +987,55 @@ async function processRealAbandonment(payload) {
   return eventRecord;
 }
 
+// Sweeper Autónomo en Segundo Plano: detecta sesiones inactivas/abandonadas cada 10s
+function startAbandonmentSweeper() {
+  setInterval(async () => {
+    const now = Date.now();
+    const timeoutMs = Number(appState.config.abandonTimeoutSeconds || 25) * 1000;
+
+    for (const [sessionId, session] of activeSessions.entries()) {
+      const idleMs = now - new Date(session.updatedAt).getTime();
+      if (idleMs >= timeoutMs) {
+        activeSessions.delete(sessionId);
+
+        if (session.purchased || processedSessionIds.has(sessionId)) continue;
+        // Solo dispara autónomamente si el visitante ingresó datos reales de contacto o tiene >= 10s
+        const hasContact = Boolean((session.phone && session.phone.trim()) || (session.email && session.email.trim()));
+        if (!hasContact || Number(session.secondsViewed || 0) < 5) continue;
+
+        processedSessionIds.add(sessionId);
+        console.log(`⚡ [Sweeper Autónomo] Abandono detectado tras ${Math.round(idleMs / 1000)}s sin latido: ${session.leadName} (${session.productName})`);
+        await processRealAbandonment({
+          sessionId,
+          leadId: session.leadId,
+          firstName: session.leadName.split(' ')[0],
+          lastName: session.leadName.split(' ').slice(1).join(' '),
+          phone: session.phone,
+          email: session.email,
+          productSlug: session.productSlug,
+          productName: session.productName,
+          secondsViewed: session.secondsViewed,
+          interactions: session.interactions,
+          exitReason: 'INACTIVIDAD_AUTONOMA_SERVIDOR'
+        }).catch(err => console.warn('Error en sweeper:', err.message));
+      }
+    }
+  }, 10000);
+}
+
 // ----------------------------------------------------------------------------
 // 7. CONVERSIÓN REAL LEAD -> PAYER EN BASE DE DATOS Y DATA MART
 // ----------------------------------------------------------------------------
-async function convertLeadToPayerInDb(eventId, paymentDto) {
-  const ev = appState.events.find(e => Number(e.id) === Number(eventId)) || appState.events[0];
+async function convertLeadToPayerInDb(eventOrId, paymentDto) {
+  let ev = null;
+  if (typeof eventOrId === 'object' && eventOrId !== null) {
+    ev = eventOrId;
+  } else {
+    ev = appState.events.find(e => Number(e.id) === Number(eventOrId) || e.recoverToken === String(eventOrId));
+  }
   if (!ev) throw new Error('Registro de abandono no encontrado');
+
+  if (ev.status === 'CONVERTIDO_PAYER') return ev;
 
   const method = (paymentDto.paymentMethod || 'YAPE').toUpperCase();
   const amount = Number(paymentDto.amount || ev.productPrice || 6599);
@@ -877,7 +1123,7 @@ async function convertLeadToPayerInDb(eventId, paymentDto) {
           INSERT INTO core.historial_etapa
             (id_persona, etapa_anterior, etapa_nueva, motivo_transicion, senal_origen, id_entidad_referencia, tipo_entidad_referencia, registrado_por)
           VALUES
-            (@idPersona, 'LEADS', 'PAYER', CONCAT(N'Conversión LEAD -> PAYER recuperada por Agente de Retargeting vía ', @canalRecuperacion), 'PAGO_RETARGETING', @idPago, 'pago', 'AGT_RETARGETING_LP');
+            (@idPersona, 'LEADS', 'PAYER', CONCAT(N'Conversión LEAD -> PAYER recuperada vía ', @canalRecuperacion), 'PAGO_RETARGETING', @idPago, 'pago', 'AGT_RETARGETING_LP');
 
           UPDATE leads.abandono_carrito_retargeting
           SET estado_recuperacion = 'CONVERTIDO_PAYER',
@@ -888,7 +1134,6 @@ async function convertLeadToPayerInDb(eventId, paymentDto) {
               fecha_conversion = SYSDATETIME()
           WHERE id_persona = @idPersona AND estado_recuperacion <> 'CONVERTIDO_PAYER';
 
-          -- Actualizar DimPersona en el Data Mart PoluxImportMart si existe
           IF DB_ID('PoluxImportMart') IS NOT NULL
           BEGIN
             UPDATE PoluxImportMart.dbo.DimPersona
@@ -921,17 +1166,16 @@ async function convertLeadToPayerInDb(eventId, paymentDto) {
   const leadObj = appState.leads.find(l => Number(l.id) === Number(ev.leadId));
   if (leadObj) leadObj.stage = 'PAYER';
 
-  // Si WhatsApp está conectado, enviar confirmación real del comprobante SUNAT al cliente
-  if (waStatus.state === 'CONNECTED') {
-    await sendRealWhatsAppMessage(
-      ev.leadPhone,
-      null,
+  if (waStatus.state === 'CONNECTED' && ev.leadPhone) {
+    const receiptMsg =
       `✅ *PAGO CONFIRMADO — POLUX IMPORTS PERÚ*\n\n` +
-        `¡Gracias *${ev.leadFirstName}*! Tu pago por *S/ ${amount.toLocaleString('es-PE', { minimumFractionDigits: 2 })}* (${method}) ha sido validado.\n` +
-        `🧾 *Comprobante SUNAT:* ${receiptNumber}\n` +
-        `📦 *Orden Activada:* ${orderCode} (${ev.productName})\n` +
-        `📍 Te notificaremos por esta vía el arribo de tu equipo a nuestra sede de Av. Larco 840, Trujillo.`
-    );
+      `¡Gracias *${ev.leadFirstName}*! Tu pago por *${fmtMoney(amount)}* (${method}) ha sido validado.\n` +
+      `🧾 *Comprobante SUNAT:* ${receiptNumber}\n` +
+      `📦 *Orden Activada:* ${orderCode} (${ev.productName})\n` +
+      `📍 Tu equipo queda listo para entrega/recojo en Av. Larco 840, Trujillo.`;
+    await sendRealWhatsAppMessage(ev.leadPhone, null, receiptMsg);
+    if (!Array.isArray(ev.conversation)) ev.conversation = [];
+    ev.conversation.push({ from: 'AGENT', action: 'PAYMENT_RECEIPT', text: receiptMsg, at: new Date().toISOString() });
   }
 
   saveState();
@@ -939,10 +1183,19 @@ async function convertLeadToPayerInDb(eventId, paymentDto) {
 }
 
 // ----------------------------------------------------------------------------
-// 8. ENDPOINTS DE API PARA LA APP DE POLUX (/landing) Y EL PANEL REAL
+// 8. ENDPOINTS DE API
 // ----------------------------------------------------------------------------
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'polux-retargeting-agent',
+    whatsappState: waStatus.state,
+    smtpMode: mailAccountInfo.mode,
+    sqlServerConnected: sqlConnected,
+    activeSessions: activeSessions.size
+  });
+});
 
-// Estado completo + analítica SQL Server en tiempo real
 app.get('/api/status', async (req, res) => {
   let dbAnalytics = {
     byChannel: [],
@@ -965,28 +1218,12 @@ app.get('/api/status', async (req, res) => {
           GROUP BY canal_accion, rango_detectado;
         `),
         sqlPool.request().query(`
-          SELECT TOP 30
-            r.id_retargeting,
-            r.id_persona,
-            p.nombres,
-            p.apellidos,
-            p.telefono_movil,
-            p.correo_electronico,
-            p.etapa_actual,
-            r.nombre_producto,
-            r.precio_producto_pen,
-            r.segundos_permanencia,
-            r.minutos_permanencia,
-            r.rango_detectado,
-            r.canal_accion,
-            r.probabilidad_compra,
-            r.estado_recuperacion,
-            r.medio_pago_conversion,
-            r.monto_pagado_pen,
-            r.comprobante_sunat,
-            r.url_vista_previa_email,
-            r.fecha_abandono,
-            r.fecha_conversion
+          SELECT TOP 25
+            r.id_retargeting, r.id_persona, p.nombres, p.apellidos, p.etapa_actual,
+            r.nombre_producto, r.precio_producto_pen, r.segundos_permanencia,
+            r.rango_detectado, r.canal_accion, r.probabilidad_compra,
+            r.estado_recuperacion, r.monto_pagado_pen, r.comprobante_sunat,
+            r.fecha_abandono, r.fecha_conversion
           FROM leads.abandono_carrito_retargeting r
           LEFT JOIN core.persona p ON p.id_persona = r.id_persona
           ORDER BY r.id_retargeting DESC;
@@ -1014,6 +1251,12 @@ app.get('/api/status', async (req, res) => {
     .filter(e => e.status === 'CONVERTIDO_PAYER')
     .reduce((acc, e) => acc + Number(e.paymentInfo?.amount || e.productPrice || 0), 0);
 
+  const sessionsList = Array.from(activeSessions.values()).map(s => {
+    const product = findProduct(s.productSlug || s.productName);
+    const analysis = calculateIntentAnalysis(s.secondsViewed, s.interactions, product);
+    return { ...s, analysis };
+  });
+
   res.json({
     ok: true,
     whatsapp: waStatus,
@@ -1021,11 +1264,11 @@ app.get('/api/status', async (req, res) => {
     sqlServerConnected: sqlConnected,
     config: {
       ...appState.config,
-      smtpPass: appState.config.smtpPass ? '********' : ''
+      smtpPassConfigured: Boolean(runtimeSmtpPass || process.env.SMTP_PASS)
     },
     catalog: CATALOG,
     leads: appState.leads,
-    activeSessions: Array.from(activeSessions.values()),
+    activeSessions: sessionsList,
     events: appState.events,
     dbAnalytics,
     kpis: {
@@ -1035,56 +1278,90 @@ app.get('/api/status', async (req, res) => {
       recoveredRevenuePen: recoveredRevenue,
       byEmail: appState.events.filter(e => e.channel === 'CORREO_HTML').length,
       byWhatsapp: appState.events.filter(e => e.channel === 'WHATSAPP_DIRECTO').length,
-      byAdvisor: appState.events.filter(e => e.channel === 'ALERTA_ASESOR_LLAMADA').length
+      byAdvisor: appState.events.filter(e => e.channel === 'ALERTA_ASESOR_LLAMADA').length,
+      pendingAdvisorCalls: appState.events.filter(e => e.channel === 'ALERTA_ASESOR_LLAMADA' && !e.advisorClaimedAt && e.status !== 'CONVERTIDO_PAYER').length
     }
   });
 });
 
-// Recibir latidos (heartbeats) en tiempo real desde la Tienda Polux (/landing)
+// Telemetría en vivo desde /landing
 app.post('/api/telemetry/heartbeat', (req, res) => {
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (_) { body = {}; }
   }
-  const sessionId = body.sessionId || 'anon-session';
+  const sessionId = body.sessionId || `sess-${Date.now()}`;
+  const prev = activeSessions.get(sessionId);
+
   activeSessions.set(sessionId, {
     sessionId,
     leadId: body.leadId || 101,
-    leadName: body.leadName || 'Ronaldo Robles Romero',
-    phone: body.phone || '+51 944 820 915',
-    email: body.email || 'ronaldo.robles@unitru.edu.pe',
+    leadName: (body.leadName || 'Visitante en tienda').trim(),
+    phone: (body.phone || '').trim(),
+    email: (body.email || '').trim(),
     productName: body.productName || 'iPhone 16 Pro Max 256 GB',
     productSlug: body.productSlug || 'iphone-16-pro-max',
     secondsViewed: Number(body.secondsViewed || 0),
+    interactions: body.interactions || prev?.interactions || {},
+    purchased: Boolean(body.purchased || prev?.purchased),
     updatedAt: new Date().toISOString()
   });
 
-  // Limpiar sesiones inactivas de hace más de 10 min
-  const now = Date.now();
-  for (const [k, v] of activeSessions.entries()) {
-    if (now - new Date(v.updatedAt).getTime() > 600000) activeSessions.delete(k);
+  if (body.purchased) {
+    activeSessions.delete(sessionId);
+    processedSessionIds.add(sessionId);
   }
 
   res.json({ ok: true });
 });
 
-// Recibir evento real de abandono desde /landing (compatible con fetch y navigator.sendBeacon)
+// Abandono inmediato (sendBeacon o disparo manual)
 app.post('/api/retargeting/abandon', async (req, res) => {
   try {
     let body = req.body;
     if (typeof body === 'string') {
       try { body = JSON.parse(body); } catch (_) { body = {}; }
     }
-    if (body.sessionId) activeSessions.delete(body.sessionId);
+    if (body.sessionId) {
+      activeSessions.delete(body.sessionId);
+      if (!body.bypassCooldown && processedSessionIds.has(body.sessionId)) {
+        return res.json({ ok: true, deduplicated: true });
+      }
+      processedSessionIds.add(body.sessionId);
+    }
 
-    const event = await processRealAbandonment(body || {});
-    res.json({ ok: true, event });
+    const result = await processRealAbandonment(body || {});
+    if (result.skippedCooldown) {
+      return res.json({ ok: true, skipped: true, reason: result.reason });
+    }
+    res.json({ ok: true, event: result });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// Convertir un abandono en venta real (LEAD -> PAYER)
+// Link Mágico de Recuperación: consultar reserva por token
+app.get('/api/retargeting/recover/:token', (req, res) => {
+  const token = String(req.params.token || '').trim();
+  const ev = appState.events.find(e => e.recoverToken === token || String(e.id) === token);
+  if (!ev) return res.status(404).json({ ok: false, error: 'Enlace de reserva no encontrado o expirado.' });
+  res.json({ ok: true, recovery: ev });
+});
+
+// Link Mágico de Recuperación: completar pago desde PoluxPay -> PAYER
+app.post('/api/retargeting/recover/:token/complete', async (req, res) => {
+  try {
+    const token = String(req.params.token || '').trim();
+    const ev = appState.events.find(e => e.recoverToken === token || String(e.id) === token);
+    if (!ev) return res.status(404).json({ ok: false, error: 'Token de recuperación no encontrado.' });
+    const updated = await convertLeadToPayerInDb(ev, req.body || {});
+    res.json({ ok: true, event: updated });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Convertir abandono a PAYER directamente por ID
 app.post('/api/retargeting/:id/convert', async (req, res) => {
   try {
     const ev = await convertLeadToPayerInDb(req.params.id, req.body || {});
@@ -1094,68 +1371,53 @@ app.post('/api/retargeting/:id/convert', async (req, res) => {
   }
 });
 
-// Actualizar configuración real (Teléfono del asesor, correo Gmail SMTP, datos de contacto)
+// Registrar toma de llamada del Asesor (SLA > 10 min)
+app.post('/api/retargeting/:id/advisor-claim', async (req, res) => {
+  try {
+    const ev = appState.events.find(e => Number(e.id) === Number(req.params.id));
+    if (!ev) return res.status(404).json({ ok: false, error: 'Evento no encontrado' });
+
+    const now = new Date();
+    ev.advisorClaimedAt = now.toISOString();
+    ev.slaSeconds = Math.max(1, Math.round((now.getTime() - new Date(ev.createdAt).getTime()) / 1000));
+
+    if (sqlConnected && sqlPool && ev.leadId) {
+      await sqlPool.request()
+        .input('idPersona', sql.BigInt, ev.leadId)
+        .query(`
+          UPDATE core.alerta_operativa
+          SET estado_alerta = 'ATENDIDA', fecha_atencion = SYSDATETIME()
+          WHERE id_persona = @idPersona AND codigo_tipo_alerta = 'ABANDONO_ALTA_INTENCION_MAS_10M' AND estado_alerta = 'ACTIVA';
+        `).catch(() => {});
+    }
+
+    saveState();
+    res.json({ ok: true, event: ev });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Actualizar configuración de asesor, SMTP y umbrales de reglas
 app.post('/api/config', async (req, res) => {
   try {
     const b = req.body || {};
     if (b.advisorName !== undefined) appState.config.advisorName = b.advisorName;
     if (b.advisorPhone !== undefined) appState.config.advisorPhone = b.advisorPhone;
     if (b.advisorEmail !== undefined) appState.config.advisorEmail = b.advisorEmail;
+    if (b.poluxStoreUrl !== undefined) appState.config.poluxStoreUrl = b.poluxStoreUrl;
     if (b.smtpUser !== undefined) appState.config.smtpUser = b.smtpUser.trim();
-    if (b.smtpPass !== undefined && b.smtpPass !== '********') {
-      appState.config.smtpPass = b.smtpPass.trim();
+    if (b.smtpPass !== undefined && b.smtpPass.trim() && b.smtpPass !== '********') {
+      runtimeSmtpPass = b.smtpPass.trim();
     }
+    if (b.emailMaxSeconds !== undefined) appState.config.emailMaxSeconds = Math.max(30, Number(b.emailMaxSeconds));
+    if (b.whatsappMaxSeconds !== undefined) appState.config.whatsappMaxSeconds = Math.max(60, Number(b.whatsappMaxSeconds));
+    if (b.abandonTimeoutSeconds !== undefined) appState.config.abandonTimeoutSeconds = Math.max(10, Number(b.abandonTimeoutSeconds));
+    if (b.cooldownMinutes !== undefined) appState.config.cooldownMinutes = Math.max(0, Number(b.cooldownMinutes));
+
     saveState();
     await initMailer();
     res.json({ ok: true, smtp: mailAccountInfo, config: appState.config });
-  } catch (err) {
-    res.status(400).json({ ok: false, error: err.message });
-  }
-});
-
-// Actualizar datos reales de teléfono/correo de un Lead para pruebas en vivo
-app.post('/api/leads/update-contact', async (req, res) => {
-  try {
-    const { id, firstName, lastName, phone, email } = req.body || {};
-    let lead = appState.leads.find(l => Number(l.id) === Number(id));
-    if (lead) {
-      if (firstName) lead.firstName = firstName.trim();
-      if (lastName) lead.lastName = lastName.trim();
-      if (phone) lead.phone = phone.trim();
-      if (email) lead.email = email.trim();
-    } else {
-      lead = {
-        id: Number(id || Date.now() % 100000),
-        firstName: (firstName || 'Ronaldo').trim(),
-        lastName: (lastName || 'Robles').trim(),
-        phone: (phone || '+51 944 820 915').trim(),
-        email: (email || 'ronaldo.robles@unitru.edu.pe').trim(),
-        district: 'Víctor Larco Herrera',
-        stage: 'LEAD'
-      };
-      appState.leads.unshift(lead);
-    }
-
-    if (sqlConnected && sqlPool && lead.id) {
-      await sqlPool.request()
-        .input('id', sql.BigInt, lead.id)
-        .input('nombres', sql.NVarChar(100), lead.firstName)
-        .input('apellidos', sql.NVarChar(100), lead.lastName)
-        .input('telefono', sql.VarChar(25), lead.phone)
-        .input('correo', sql.NVarChar(150), lead.email)
-        .query(`
-          UPDATE core.persona
-          SET nombres = @nombres,
-              apellidos = @apellidos,
-              telefono_movil = @telefono,
-              correo_electronico = @correo,
-              fecha_actualizacion = SYSDATETIME()
-          WHERE id_persona = @id;
-        `).catch(() => {});
-    }
-
-    saveState();
-    res.json({ ok: true, lead });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });
   }
@@ -1176,17 +1438,19 @@ app.post('/api/whatsapp/reset', async (req, res) => {
   }
 });
 
-// Iniciar todo
+// Iniciar sistema
 (async () => {
   await initMailer();
   await initSqlConnection();
   await initWhatsAppClient();
+  startAbandonmentSweeper();
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log('============================================================================');
-    console.log(`🚀 POLUX RETARGETING AGENT (REAL ENGINE) EN: http://localhost:${PORT}`);
-    console.log('   - Conectado a la tienda de Polux: http://localhost:8080/landing');
-    console.log('   - Escanea el QR de WhatsApp en http://localhost:4000 para envíos directos');
+    console.log(`🚀 POLUX RETARGETING AGENT EN: http://localhost:${PORT}`);
+    console.log(`   - Tienda Polux configurada: ${appState.config.poluxStoreUrl}`);
+    console.log(`   - SMTP: ${mailAccountInfo.mode} (${mailAccountInfo.user})`);
+    console.log(`   - Sweeper autónomo activo (timeout: ${appState.config.abandonTimeoutSeconds}s)`);
     console.log('============================================================================');
   });
 })();

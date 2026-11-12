@@ -6,8 +6,11 @@
     "poluxStoreUrl": "http://localhost:8080/landing",
     "smtpHost": "smtp.gmail.com",
     "smtpPort": 465,
-    "smtpUser": "",
-    "smtpPass": ""
+    "smtpUser": "diegokids111@gmail.com",
+    "emailMaxSeconds": 300,
+    "whatsappMaxSeconds": 600,
+    "abandonTimeoutSeconds": 25,
+    "cooldownMinutes": 10
   },
   "leads": [
     {
