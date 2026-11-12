@@ -59,32 +59,62 @@ app.use(express.text({ type: 'text/plain' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ----------------------------------------------------------------------------
-// 1. CATÁLOGO OFICIAL DE POLUX IMPORTS (SINCRONIZADO CON /landing)
+// 1. CATÁLOGO OFICIAL DE POLUX IMPORTS (SINCRONIZADO CON /proyectobi/storefront/catalog)
 // ----------------------------------------------------------------------------
-const CATALOG = [
+const CATEGORY_IMAGE_MAP = {
+  iPhone: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=900&q=85',
+  MacBook: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85',
+  Mac: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85',
+  iPad: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=85',
+  'Apple Watch': 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=85',
+  Watch: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=85',
+  AirPods: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=900&q=85',
+  Accesorios: 'https://images.unsplash.com/photo-1615526675159-e248c3021d3f?auto=format&fit=crop&w=900&q=85',
+};
+
+let CATALOG = [
   {
     id: 1,
+    slug: 'iphone-17-pro-max',
+    sku: 'APL-IP17PM-256-TI',
+    name: 'iPhone 17 Pro Max 256 GB',
+    shortName: 'iPhone 17 Pro Max',
+    category: 'iPhone',
+    condition: 'NUEVO_SELLADO',
+    color: 'Titanio Desierto',
+    capacity: '256 GB',
+    stock: 6,
+    price: 7299.00,
+    originalPrice: 7899.00,
+    installment3: 2433.00,
+    specs: 'Chip A19 Pro (3nm), Super Retina XDR 6.9" 120Hz, sellado Apple USA.',
+    image: CATEGORY_IMAGE_MAP.iPhone
+  },
+  {
+    id: 2,
     slug: 'iphone-16-pro-max',
     sku: 'APL-IP16PM-256-TN',
     name: 'iPhone 16 Pro Max 256 GB',
     shortName: 'iPhone 16 Pro Max',
     category: 'iPhone',
+    condition: 'NUEVO_SELLADO',
     color: 'Titanio Natural',
     capacity: '256 GB',
-    stock: 4,
-    price: 6599.00,
-    originalPrice: 7299.00,
-    installment3: 2199.67,
+    stock: 9,
+    price: 6299.00,
+    originalPrice: 6999.00,
+    installment3: 2099.67,
     specs: 'Pantalla 6.9" Super Retina XDR, Chip A18 Pro, Cámara 48MP 5x, sellado Apple USA.',
-    image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=900&q=85'
+    image: CATEGORY_IMAGE_MAP.iPhone
   },
   {
-    id: 2,
+    id: 3,
     slug: 'iphone-16',
     sku: 'APL-IP16-128-ULT',
     name: 'iPhone 16 128 GB',
     shortName: 'iPhone 16',
     category: 'iPhone',
+    condition: 'NUEVO_SELLADO',
     color: 'Azul Ultramarino',
     capacity: '128 GB',
     stock: 7,
@@ -95,28 +125,30 @@ const CATALOG = [
     image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=900&q=85'
   },
   {
-    id: 3,
-    slug: 'macbook-air-m4',
+    id: 12,
+    slug: 'macbook-air-m4-13',
     sku: 'APL-MBA-M4-13',
-    name: 'MacBook Air 13" Chip M4',
+    name: 'MacBook Air 13" Chip M4 16GB / 512GB',
     shortName: 'MacBook Air M4',
-    category: 'Mac',
+    category: 'MacBook',
+    condition: 'NUEVO_SELLADO',
     color: 'Medianoche',
     capacity: '16 GB / 512 GB SSD',
-    stock: 3,
+    stock: 5,
     price: 5499.00,
     originalPrice: 6199.00,
     installment3: 1833.00,
-    specs: 'Liquid Retina 13.6", 16 GB RAM unificada, 18h batería, MagSafe 3.',
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85'
+    specs: 'Liquid Retina 13.6", Chip Apple M4, 16 GB RAM unificada, 18h batería.',
+    image: CATEGORY_IMAGE_MAP.MacBook
   },
   {
-    id: 4,
+    id: 17,
     slug: 'ipad-air-m3',
     sku: 'APL-IPADAIR-M3',
     name: 'iPad Air 11" Chip M3 128 GB',
     shortName: 'iPad Air M3',
     category: 'iPad',
+    condition: 'NUEVO_SELLADO',
     color: 'Gris Espacial',
     capacity: '128 GB Wi-Fi',
     stock: 5,
@@ -124,15 +156,16 @@ const CATALOG = [
     originalPrice: 3599.00,
     installment3: 1066.33,
     specs: 'Liquid Retina 11", Chip M3, compatible Apple Pencil Pro.',
-    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=85'
+    image: CATEGORY_IMAGE_MAP.iPad
   },
   {
-    id: 5,
+    id: 20,
     slug: 'apple-watch-s10',
     sku: 'APL-AWS10-46',
     name: 'Apple Watch Series 10 46 mm',
     shortName: 'Apple Watch Series 10',
-    category: 'Watch',
+    category: 'Apple Watch',
+    condition: 'NUEVO_SELLADO',
     color: 'Negro Azabache',
     capacity: '46 mm GPS',
     stock: 6,
@@ -140,15 +173,16 @@ const CATALOG = [
     originalPrice: 2499.00,
     installment3: 733.00,
     specs: 'OLED gran angular, ECG y apnea, carga 80% en 30 min.',
-    image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=85'
+    image: CATEGORY_IMAGE_MAP['Apple Watch']
   },
   {
-    id: 6,
+    id: 21,
     slug: 'airpods-pro-2',
     sku: 'APL-APP2-USBC',
     name: 'AirPods Pro 2 (USB-C)',
     shortName: 'AirPods Pro 2',
     category: 'AirPods',
+    condition: 'NUEVO_SELLADO',
     color: 'Blanco',
     capacity: 'USB-C MagSafe',
     stock: 11,
@@ -156,9 +190,62 @@ const CATALOG = [
     originalPrice: 1299.00,
     installment3: 366.33,
     specs: 'Chip H2, Cancelación activa 2x, estuche MagSafe con altavoz.',
-    image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=900&q=85'
+    image: CATEGORY_IMAGE_MAP.AirPods
+  },
+  {
+    id: 5,
+    slug: 'iphone-15-pro-seminuevo',
+    sku: 'PLX-CERT-IP15P-256',
+    name: 'iPhone 15 Pro 256 GB · Seminuevo Certificado',
+    shortName: 'iPhone 15 Pro (Grado A+)',
+    category: 'iPhone',
+    condition: 'SEMINUEVO_CERTIFICADO',
+    color: 'Titanio Azul',
+    capacity: '256 GB',
+    stock: 2,
+    price: 3699.00,
+    originalPrice: 4899.00,
+    installment3: 1233.00,
+    specs: 'Chip A17 Pro · Batería 93% certificada · Garantía Polux Lab 6 meses.',
+    image: CATEGORY_IMAGE_MAP.iPhone
   }
 ];
+
+async function syncCatalogFromStorefront() {
+  const url = process.env.STOREFRONT_CATALOG_URL || 'http://localhost:3000/proyectobi/storefront/catalog';
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const remote = await resp.json();
+    if (!Array.isArray(remote) || !remote.length) return;
+    CATALOG = remote.map((item, idx) => {
+      const price = Number(item.pricePen || 4299);
+      const localPublicUrl = item.imageUrl && String(item.imageUrl).startsWith('http')
+        ? item.imageUrl
+        : CATEGORY_IMAGE_MAP[item.category] || CATEGORY_IMAGE_MAP.iPhone;
+      return {
+        id: Number(item.dbProductId || idx + 1),
+        slug: item.slug,
+        sku: item.sku || `PLX-${idx + 1}`,
+        name: item.name,
+        shortName: item.shortName || item.name,
+        category: item.category || 'iPhone',
+        condition: item.condition || 'NUEVO_SELLADO',
+        color: item.color || 'Oficial',
+        capacity: item.capacity || '256 GB',
+        stock: Number(item.stock ?? 5),
+        price,
+        originalPrice: Number(item.originalPricePen || Math.round(price * 1.12)),
+        installment3: Number((price / 3).toFixed(2)),
+        specs: item.tagline || `${item.specs?.chip || 'Apple Silicon'} · ${item.specs?.display || ''}`.trim(),
+        image: localPublicUrl,
+      };
+    });
+    console.log(`🔄 Catálogo sincronizado desde Storefront API (${CATALOG.length} modelos).`);
+  } catch {
+    // Mantiene fallback local si plataforma principal aún no levantó
+  }
+}
 
 function findProduct(idOrSlugOrName) {
   if (!idOrSlugOrName) return CATALOG[0];
@@ -203,7 +290,7 @@ const DEFAULT_LEADS = [
     lastName: 'Robles Romero',
     documentNumber: '74892103',
     email: 'ronaldo.robles@unitru.edu.pe',
-    phone: '+51 944 820 915',
+    phone: '+51 963 150 918',
     district: 'Víctor Larco Herrera',
     stage: 'LEAD',
     priority: 'ALTA'
@@ -693,6 +780,14 @@ function calculateIntentAnalysis(secondsViewed, interactions, product) {
     bonus += 5;
     reasons.push(`Comparó ${signals.productsViewed} equipos Apple (+5%)`);
   }
+  if (Number(signals.cartCount || 0) > 0) {
+    bonus += 12;
+    reasons.push(`Dejó ${signals.cartCount} producto(s) en Bolsa Polux (+12%)`);
+  }
+  if (Number(signals.comparedCount || 0) >= 2) {
+    bonus += 6;
+    reasons.push(`Usó Comparador de modelos (${signals.comparedCount}) (+6%)`);
+  }
   if (Number(product?.price || 0) >= 4000) {
     bonus += 4;
     reasons.push('Ticket alto Apple Pro/Mac (+4%)');
@@ -763,7 +858,7 @@ async function processRealAbandonment(payload) {
       lastName: targetLastName || 'Trujillo',
       documentNumber: payload.documentNumber || '74892103',
       email: targetEmail || 'ronaldo.robles@unitru.edu.pe',
-      phone: targetPhone || '+51 944 820 915',
+      phone: targetPhone || '+51 963 150 918',
       district: payload.district || 'Víctor Larco Herrera',
       stage: 'LEAD'
     };
@@ -771,7 +866,11 @@ async function processRealAbandonment(payload) {
 
   const finalPhone = targetPhone || lead.phone;
   const finalEmail = targetEmail || lead.email;
-  const product = findProduct(payload.productId || payload.productSlug || payload.productName);
+  const cartItems = Array.isArray(payload.cartItems) ? payload.cartItems : [];
+  const product = findProduct(payload.productId || payload.productSlug || payload.productName || cartItems[0]?.slug);
+  const cartTotal = Number(payload.cartTotal || 0) || (cartItems.length
+    ? cartItems.reduce((acc, it) => acc + Number(it.pricePen || product.price) * Number(it.qty || 1), 0)
+    : product.price);
   const secs = Math.max(5, Number(payload.secondsViewed || 120));
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
@@ -790,7 +889,12 @@ async function processRealAbandonment(payload) {
   const baseStoreUrl = (appState.config.poluxStoreUrl || 'http://localhost:8080/landing').split('?')[0];
   const storeCheckoutUrl = `${baseStoreUrl}?recover=${recoverToken}&product=${product.slug}`;
 
-  const analysis = calculateIntentAnalysis(secs, payload.interactions, product);
+  const enrichedInteractions = {
+    ...(payload.interactions || {}),
+    cartCount: cartItems.length,
+    comparedCount: Array.isArray(payload.comparedModels) ? payload.comparedModels.length : 0,
+  };
+  const analysis = calculateIntentAnalysis(secs, enrichedInteractions, product);
   const { tier, channel, intentLevel, probability, reasons } = analysis;
 
   const firstNameUpper = targetFirstName.toUpperCase();
@@ -956,6 +1060,11 @@ async function processRealAbandonment(payload) {
     productColor: product.color,
     productPrice: product.price,
     productImage: product.image,
+    cartItems,
+    cartTotal,
+    focusedProduct: payload.focusedProduct || null,
+    comparedModels: Array.isArray(payload.comparedModels) ? payload.comparedModels : [],
+    customerLoggedIn: Boolean(payload.customerLoggedIn),
     secondsViewed: secs,
     durationLabel,
     exitReason: payload.exitReason || 'ABANDONO_DETECTADO',
@@ -1014,6 +1123,11 @@ function startAbandonmentSweeper() {
           email: session.email,
           productSlug: session.productSlug,
           productName: session.productName,
+          cartItems: session.cartItems || [],
+          cartTotal: session.cartTotal || 0,
+          focusedProduct: session.focusedProduct || null,
+          comparedModels: session.comparedModels || [],
+          customerLoggedIn: Boolean(session.customerLoggedIn),
           secondsViewed: session.secondsViewed,
           interactions: session.interactions,
           exitReason: 'INACTIVIDAD_AUTONOMA_SERVIDOR'
@@ -1299,10 +1413,19 @@ app.post('/api/telemetry/heartbeat', (req, res) => {
     leadName: (body.leadName || 'Visitante en tienda').trim(),
     phone: (body.phone || '').trim(),
     email: (body.email || '').trim(),
-    productName: body.productName || 'iPhone 16 Pro Max 256 GB',
-    productSlug: body.productSlug || 'iphone-16-pro-max',
+    productName: body.productName || 'iPhone 17 Pro Max 256 GB',
+    productSlug: body.productSlug || 'iphone-17-pro-max',
     secondsViewed: Number(body.secondsViewed || 0),
-    interactions: body.interactions || prev?.interactions || {},
+    cartItems: Array.isArray(body.cartItems) ? body.cartItems : prev?.cartItems || [],
+    cartTotal: Number(body.cartTotal || prev?.cartTotal || 0),
+    focusedProduct: body.focusedProduct || prev?.focusedProduct || null,
+    comparedModels: Array.isArray(body.comparedModels) ? body.comparedModels : prev?.comparedModels || [],
+    customerLoggedIn: Boolean(body.customerLoggedIn ?? prev?.customerLoggedIn),
+    interactions: {
+      ...(body.interactions || prev?.interactions || {}),
+      cartCount: Array.isArray(body.cartItems) ? body.cartItems.length : (prev?.cartItems?.length || 0),
+      comparedCount: Array.isArray(body.comparedModels) ? body.comparedModels.length : (prev?.comparedModels?.length || 0),
+    },
     purchased: Boolean(body.purchased || prev?.purchased),
     updatedAt: new Date().toISOString()
   });
@@ -1440,6 +1563,8 @@ app.post('/api/whatsapp/reset', async (req, res) => {
 
 // Iniciar sistema
 (async () => {
+  await syncCatalogFromStorefront();
+  setInterval(() => { syncCatalogFromStorefront().catch(() => {}); }, 60000);
   await initMailer();
   await initSqlConnection();
   await initWhatsAppClient();
